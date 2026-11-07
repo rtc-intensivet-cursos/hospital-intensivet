@@ -66,12 +66,12 @@ nav.tabs a:hover{color:var(--ink);background:var(--panel)}
 .map-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .zoom-btn{display:none}
 .stage{position:relative;background:#001a23;overflow:hidden}
-.stage img{display:block;width:100%;height:auto;transform-origin:50% 45%;animation:drift 26s ease-in-out infinite alternate}
+.stage img{display:block;width:100%;height:auto;transform-origin:50% 45%}
 @keyframes drift{from{transform:scale(1)}to{transform:scale(1.035)}}
-#spots{position:absolute;inset:0;animation:drift 26s ease-in-out infinite alternate;transform-origin:50% 45%}
+#spots{position:absolute;inset:0;transform-origin:50% 45%}
 .spot{position:absolute;border:2px solid transparent;border-radius:12px;background:transparent;padding:0;transition:background .2s,border-color .2s,box-shadow .2s}
 .spot:hover,.spot.hl,.spot:focus-visible{border-color:var(--c);background:rgba(0,32,43,.12);box-shadow:0 0 0 4px rgba(0,32,43,.35),inset 0 0 40px rgba(255,255,255,.08);outline:none}
-.pin{position:absolute;transform:translate(-50%,-50%);display:flex;align-items:center;gap:9px;padding:6px 14px 6px 6px;border-radius:12px;border:1px solid var(--c);background:rgba(0,42,56,.86);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:var(--ink);text-align:left;white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,.35);transition:transform .2s,background .2s}
+.pin{position:absolute;transform:translate(-50%,-50%);display:flex;align-items:center;gap:9px;padding:6px 14px 6px 6px;border-radius:12px;border:1px solid var(--c);background:rgba(0,42,56,.94);color:var(--ink);text-align:left;white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,.35);transition:transform .2s,background .2s}
 .pin:hover,.pin.hl{transform:translate(-50%,-50%) scale(1.06);background:rgba(0,58,76,.95)}
 .pin .n{position:relative;flex:none;width:12px;height:12px;margin:0 2px 0 6px;border-radius:50%;background:var(--c);color:#00202b;display:grid;place-items:center;font:700 13px var(--display)}
 .pin .n::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--c);opacity:0;animation:ring 2.6s ease-out infinite}
@@ -119,11 +119,11 @@ nav.tabs a:hover{color:var(--ink);background:var(--panel)}
 .bpop .acts{display:flex;gap:8px}
 .bpop .acts .btn{flex:1;padding:11px}
 .ci .k.b{background:#25d366;color:#04301c}
-.tela-layer{position:absolute;inset:0;z-index:3;pointer-events:none;animation:drift 26s ease-in-out infinite alternate;transform-origin:50% 45%}
+.tela-layer{position:absolute;inset:0;z-index:3;pointer-events:none;transform-origin:50% 45%}
 .telao{position:absolute;display:flex;align-items:center;justify-content:center;pointer-events:none}
 .stage .telao img{animation:none;transform:none;width:86%;flex:none;height:auto;opacity:.9;mix-blend-mode:multiply;filter:saturate(.9)}
 /* ---- vida no mapa ---- */
-.dim-layer{position:absolute;inset:0;pointer-events:none;animation:drift 26s ease-in-out infinite alternate;transform-origin:50% 45%}
+.dim-layer{position:absolute;inset:0;pointer-events:none;transform-origin:50% 45%}
 .dim{position:absolute;border-radius:12px;box-shadow:0 0 0 300vmax rgba(0,14,20,.55);opacity:0;transition:opacity .25s,left .25s,top .25s,width .25s,height .25s}
 .dim.on{opacity:1}
 .paused .dim-layer{animation-play-state:paused}
@@ -132,7 +132,7 @@ nav.tabs a:hover{color:var(--ink);background:var(--panel)}
 .siren.a{background:radial-gradient(circle,rgba(255,60,60,1) 0,rgba(255,40,40,.55) 30%,rgba(255,0,0,0) 70%);animation:sirA .9s steps(1) infinite}
 .siren.b{background:radial-gradient(circle,rgba(70,140,255,1) 0,rgba(40,110,255,.55) 30%,rgba(0,60,255,0) 70%);animation:sirB .9s steps(1) infinite}
 .siren.r{width:1.4%;background:radial-gradient(circle,rgba(255,50,50,.95) 0,rgba(255,0,0,0) 70%);animation:sirA .9s steps(1) infinite}
-.siren-glow{position:absolute;width:16%;height:9%;transform:translate(-50%,-50%);border-radius:50%;mix-blend-mode:screen;pointer-events:none;animation:sirGlow .9s steps(1) infinite;filter:blur(6px)}
+.siren-glow{position:absolute;width:16%;height:9%;transform:translate(-50%,-50%);border-radius:50%;mix-blend-mode:screen;pointer-events:none;animation:sirGlow .9s steps(1) infinite}
 @keyframes sirA{0%{opacity:1}50%{opacity:.08}}
 @keyframes sirB{0%{opacity:.08}50%{opacity:1}}
 @keyframes sirGlow{0%{background:radial-gradient(ellipse,rgba(255,40,40,.35),rgba(255,0,0,0) 70%)}50%{background:radial-gradient(ellipse,rgba(60,120,255,.35),rgba(0,60,255,0) 70%)}}
@@ -1091,7 +1091,8 @@ const SND = (() => {
   function fade(){ if (cur){ const old = cur; old.gain.setTargetAtTime(0, ac.currentTime, .06); setTimeout(()=>old.disconnect(), 500); cur = null; } curId = ""; clearTimeout(loopT); }
   function play(id, again){
     if (!on || !S[id]) return;
-    init(); if (ac.state !== "running"){ ac.resume(); return; }
+    if (!ac){ if (!(navigator.userActivation && navigator.userActivation.hasBeenActive)) return; init(); }
+    if (ac.state !== "running"){ ac.resume(); return; }
     if (!again && id === curId) return;
     if (cur && !again) fade();
     if (!cur) cur = bus();
@@ -1105,7 +1106,7 @@ const SND = (() => {
     return ac.resume().then(() => { if (on && hover){ curId = ""; play(hover); } }).catch(() => {}); }
   function ativo(){ return !!ac && ac.state === "running"; }
   function toggle(){ init(); on = !on; wake(); if (!on){ hover = ""; fade(); } return on; }
-  return {play, enter, leave, wake, toggle, ativo, state: () => ({hover, curId, on, ctx: ac && ac.state})};
+  return {play, enter, leave, wake, toggle, ativo, preparar: init, state: () => ({hover, curId, on, ctx: ac && ac.state})};
 })();
 document.getElementById("sound").addEventListener("click", e => { if (e.currentTarget.getAttribute("aria-pressed") === "true" && !window.__somAntes){ setTimeout(rotuloSom, 80); return; } /* 1º clique só libera o som */ const on = SND.toggle(); e.currentTarget.setAttribute("aria-pressed", on); setTimeout(rotuloSom, 50); });
 /* o navegador só libera o áudio depois do primeiro clique ou toque na página */
@@ -1202,6 +1203,10 @@ billyPop.addEventListener("click", e => { if (e.target === billyPop) billyPop.cl
 document.addEventListener("keydown", e => { if (e.key==="Escape") billyPop.classList.remove("on"); });
 document.getElementById("billyAdd").addEventListener("click", () => { add("b", BILLY.id); billySync(); });
 document.getElementById("billyMore").addEventListener("click", e => { e.preventDefault(); toast("Protótipo: aqui abriria a página do Billy"); });
+/* monta o índice da busca com a página ociosa, para o 1º clique ser instantâneo */
+(window.requestIdleCallback || (f => setTimeout(f, 1200)))(() => { if (!SEARCH_DOCS) buildIndex(); }, {timeout: 3000});
+/* prepara o áudio (ainda mudo) com a página ociosa; o 1º clique só destrava, sem travar a tela */
+setTimeout(() => (window.requestIdleCallback || (f => f()))(() => { try { SND.preparar(); } catch(e) {} }), 1500);
 drawMap(); renderMissions(); renderPrices(); renderNames(); renderCart();
 </script>
 </body>
