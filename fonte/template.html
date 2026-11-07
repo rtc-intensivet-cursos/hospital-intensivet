@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hospital Intensivet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Mundo único: hospital à noite, visto de cima como planta. Mapa no centro, painéis laterais para setor e carrinho. */
+:root{
+  --bg:#00202b; --panel:#032c3a; --panel-2:#06394a; --line:#145063; --brand:#005874; --brand-dark:#003546;
+  --ink:#eef7f4; --muted:#9dbfc4;
+  --accent:#aadac7; --accent-ink:#003546;
+  --warm:#f0a35e; --red:#ef6b6b; --violet:#a99cf5; --blue:#6fb2f2; --gold:#e5c46a;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Figtree", "Segoe UI", system-ui, sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--body);-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;font-weight:700;letter-spacing:-.01em}
+.num{font-variant-numeric:tabular-nums}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+
+/* topo */
+header.top{position:sticky;top:0;z-index:20;background:rgba(0,32,43,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:20px;height:64px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
+.brand-logo{height:34px;width:auto;display:block}.brand-sep{width:1px;height:30px;background:var(--line);margin:0 4px}
+.brand b{font:700 15px var(--display);letter-spacing:.04em;display:block}
+.brand small{font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase}
+nav.tabs{display:flex;gap:4px;margin-left:auto}
+nav.tabs a{padding:8px 14px;border-radius:8px;text-decoration:none;color:var(--muted);font-weight:600;font-size:14px}
+nav.tabs a:hover{color:var(--ink);background:var(--panel)}
+.cart-btn{display:flex;align-items:center;gap:8px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-weight:600;font-size:14px}
+.cart-btn .badge{background:var(--accent);color:var(--accent-ink);border-radius:999px;min-width:22px;height:22px;display:grid;place-items:center;font-size:12px;padding:0 6px}
+
+/* abertura */
+.intro{padding:40px 0 20px;display:grid;grid-template-columns:1.3fr 1fr;gap:32px;align-items:end}
+.eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.intro h1{font-size:clamp(30px,4.4vw,48px);line-height:1.05;margin:10px 0 12px}
+.intro h1 span{color:var(--muted);font-weight:500;display:block}
+.intro p{color:var(--muted);max-width:58ch;margin:0}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+.stat b{font:700 26px var(--display);display:block}
+.stat span{font-size:13px;color:var(--muted)}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0 24px}
+.step{display:flex;gap:12px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.step i{font:700 22px var(--display);color:var(--accent);font-style:normal}
+.step b{display:block;font-size:15px}
+.step span{font-size:13px;color:var(--muted)}
+
+/* mapa */
+.map-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.map-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;border-bottom:1px solid var(--line);font-size:13px;color:var(--muted)}
+.map-head .live{display:flex;align-items:center;gap:8px;letter-spacing:.1em;text-transform:uppercase;font-weight:700}
+.map-head .live::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px rgba(170,218,199,.18)}
+.map-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.zoom-btn{display:none}
+.stage{position:relative;background:#001a23;overflow:hidden}
+.stage img{display:block;width:100%;height:auto;transform-origin:50% 45%;animation:drift 26s ease-in-out infinite alternate}
+@keyframes drift{from{transform:scale(1)}to{transform:scale(1.035)}}
+#spots{position:absolute;inset:0;animation:drift 26s ease-in-out infinite alternate;transform-origin:50% 45%}
+.spot{position:absolute;border:2px solid transparent;border-radius:12px;background:transparent;padding:0;transition:background .2s,border-color .2s,box-shadow .2s}
+.spot:hover,.spot.hl,.spot:focus-visible{border-color:var(--c);background:rgba(0,32,43,.12);box-shadow:0 0 0 4px rgba(0,32,43,.35),inset 0 0 40px rgba(255,255,255,.08);outline:none}
+.pin{position:absolute;transform:translate(-50%,-50%);display:flex;align-items:center;gap:9px;padding:6px 14px 6px 6px;border-radius:12px;border:1px solid var(--c);background:rgba(0,42,56,.86);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:var(--ink);text-align:left;white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,.35);transition:transform .2s,background .2s}
+.pin:hover,.pin.hl{transform:translate(-50%,-50%) scale(1.06);background:rgba(0,58,76,.95)}
+.pin .n{position:relative;flex:none;width:12px;height:12px;margin:0 2px 0 6px;border-radius:50%;background:var(--c);color:#00202b;display:grid;place-items:center;font:700 13px var(--display)}
+.pin .n::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--c);opacity:0;animation:ring 2.6s ease-out infinite}
+@keyframes ring{0%{opacity:.8;transform:scale(.8)}100%{opacity:0;transform:scale(1.7)}}
+.pin b{display:block;font-size:14px;line-height:1.2}
+.pin .short{display:none}
+.pin small{display:block;font-size:11.5px;color:var(--muted);line-height:1.2}
+.pin .spn{display:none;color:var(--accent)}
+.pin .spo{position:absolute;left:calc(100% + 10px);top:50%;transform:translate(-4px,-50%);background:#fff;border-radius:10px;padding:8px 14px 6px;box-shadow:0 10px 24px rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;text-align:center}
+.pin .spo img{display:block;height:40px;width:auto;margin:0 auto}
+.pin .spo i{display:block;font:600 9.5px var(--body);letter-spacing:.14em;text-transform:uppercase;color:#4a5a63;margin-bottom:4px;font-style:normal}
+.pin.hl,.pin:hover,.pin.has-spo{z-index:6}
+.pin.hl .spn,.pin:hover .spn{display:inline}
+.pin.hl .spo,.pin:hover .spo{opacity:1;transform:translate(0,-50%)}
+.pin .spo.baixo{left:50%;top:calc(100% + 8px);transform:translate(-50%,-4px)}
+.pin.hl .spo.baixo,.pin:hover .spo.baixo{transform:translate(-50%,0)}
+.d-spo{display:flex;align-items:center;gap:12px;margin:4px 0 10px;padding:8px 12px;background:#fff;border-radius:10px;width:max-content;max-width:100%}
+.d-spo i{font:600 10px var(--body);letter-spacing:.14em;text-transform:uppercase;color:#4a5a63;font-style:normal}
+.d-spo img{height:38px;width:auto;display:block}
+.d-spo[hidden]{display:none}
+/* Billy: agente no WhatsApp, na entrada do hospital */
+.billy{position:absolute;pointer-events:auto;transform:translate(-50%,-100%);z-index:7;width:4.3%;padding:0;border:0;background:none;cursor:pointer}
+.billy svg{width:100%;height:auto;display:block;transform-origin:50% 100%;transition:transform .2s;overflow:visible}
+.billy .wa{animation:waBob 2.4s ease-in-out infinite;transform-box:fill-box;transform-origin:50% 100%}
+@keyframes waBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.billy:hover svg,.billy:focus-visible svg{transform:scale(1.12)}
+.billy .tip{position:absolute;left:50%;bottom:calc(100% + 10px);transform:translate(-50%,4px);background:#fff;color:#0b2a33;border-radius:10px;padding:8px 12px;white-space:nowrap;font:600 13px var(--body);box-shadow:0 10px 24px rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+.billy .tip b{display:block;font:700 15px var(--display);color:#0b7a4b}
+.billy:hover .tip,.billy:focus-visible .tip{opacity:1;transform:translate(-50%,0)}
+.paused .billy .wa{animation-play-state:paused}
+.bpop{position:fixed;inset:0;z-index:60;display:none;place-items:center;background:rgba(0,16,22,.6);padding:16px}
+.bpop.on{display:grid}
+.bpop .card{width:min(400px,100%);background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px 20px 18px;position:relative;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.bpop .x{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);font-size:18px;line-height:1}
+.bpop .hd{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.bpop .hd svg{width:52px;height:52px;flex:none}
+.bpop h3{margin:0;font:700 22px var(--display)}
+.bpop .hd small{display:block;color:var(--muted);font-size:13px}
+.bpop p{margin:0 0 10px;color:var(--muted);font-size:14px;line-height:1.5}
+.bpop ol{margin:0 0 12px;padding-left:20px;font-size:14px;line-height:1.5}
+.bpop ol li{margin-bottom:4px}
+.bpop .fine{font-size:11.5px;opacity:.8;margin:-4px 0 10px}
+.bpop .plan{display:flex;justify-content:space-between;align-items:baseline;border-top:1px dashed var(--line);padding-top:10px;margin-bottom:12px;font-size:13px;color:var(--muted)}
+.bpop .plan b{font:700 18px var(--display);color:var(--ink)}
+.bpop .acts{display:flex;gap:8px}
+.bpop .acts .btn{flex:1;padding:11px}
+.ci .k.b{background:#25d366;color:#04301c}
+.tela-layer{position:absolute;inset:0;z-index:3;pointer-events:none;animation:drift 26s ease-in-out infinite alternate;transform-origin:50% 45%}
+.telao{position:absolute;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.stage .telao img{animation:none;transform:none;width:86%;flex:none;height:auto;opacity:.9;mix-blend-mode:multiply;filter:saturate(.9)}
+/* ---- vida no mapa ---- */
+.dim-layer{position:absolute;inset:0;pointer-events:none;animation:drift 26s ease-in-out infinite alternate;transform-origin:50% 45%}
+.dim{position:absolute;border-radius:12px;box-shadow:0 0 0 300vmax rgba(0,14,20,.55);opacity:0;transition:opacity .25s,left .25s,top .25s,width .25s,height .25s}
+.dim.on{opacity:1}
+.paused .dim-layer{animation-play-state:paused}
+/* sirene */
+.siren{position:absolute;width:2.6%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;mix-blend-mode:screen;pointer-events:none}
+.siren.a{background:radial-gradient(circle,rgba(255,60,60,1) 0,rgba(255,40,40,.55) 30%,rgba(255,0,0,0) 70%);animation:sirA .9s steps(1) infinite}
+.siren.b{background:radial-gradient(circle,rgba(70,140,255,1) 0,rgba(40,110,255,.55) 30%,rgba(0,60,255,0) 70%);animation:sirB .9s steps(1) infinite}
+.siren.r{width:1.4%;background:radial-gradient(circle,rgba(255,50,50,.95) 0,rgba(255,0,0,0) 70%);animation:sirA .9s steps(1) infinite}
+.siren-glow{position:absolute;width:16%;height:9%;transform:translate(-50%,-50%);border-radius:50%;mix-blend-mode:screen;pointer-events:none;animation:sirGlow .9s steps(1) infinite;filter:blur(6px)}
+@keyframes sirA{0%{opacity:1}50%{opacity:.08}}
+@keyframes sirB{0%{opacity:.08}50%{opacity:1}}
+@keyframes sirGlow{0%{background:radial-gradient(ellipse,rgba(255,40,40,.35),rgba(255,0,0,0) 70%)}50%{background:radial-gradient(ellipse,rgba(60,120,255,.35),rgba(0,60,255,0) 70%)}}
+.map-card.hot-aph .siren{width:3.4%}
+.map-card.hot-aph .siren.r{width:2%}
+.map-card.hot-aph .siren-glow{width:22%;height:12%}
+.paused .siren,.paused .siren-glow,.paused .ecg svg,.paused .emcir{animation-play-state:paused}
+/* monitores com ECG */
+.ecg{position:absolute;overflow:hidden;border-radius:2px;background:rgba(2,24,18,.92);pointer-events:none;box-shadow:0 0 6px rgba(80,255,160,.35)}
+.ecg svg{position:absolute;left:0;top:0;height:100%;width:200%;animation:ecgRun 2.2s linear infinite}
+.ecg.fast svg{animation-duration:1.1s}
+.ecg path{fill:none;stroke:#58ff9c;stroke-width:3;vector-effect:non-scaling-stroke;stroke-width:1.3px;filter:drop-shadow(0 0 1px #58ff9c)}
+@keyframes ecgRun{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+/* luz "Em cirurgia" */
+.emcir{position:absolute;transform:translate(-50%,-50%);container-type:inline-size;width:8%;aspect-ratio:4.2;border-radius:3px;background:#3a0b0b;border:1px solid #7a1c1c;display:grid;place-items:center;pointer-events:none;animation:emcir 2.4s ease-in-out infinite}
+.emcir span{font:800 12.5cqw/1 var(--body);letter-spacing:.06em;color:#ff5b5b;text-shadow:0 0 4px #ff2b2b,0 0 8px #ff2b2b;white-space:nowrap}
+@keyframes emcir{0%,100%{box-shadow:0 0 6px rgba(255,40,40,.5)}50%{box-shadow:0 0 16px rgba(255,40,40,.95)}}
+/* telão rotativo */
+.telao{container-type:inline-size}
+.telao .sl{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;opacity:0;transition:opacity .8s;padding:0 6%}
+.telao .sl.on{opacity:1}
+.telao .sl small{font:700 7cqw/1.15 var(--body);letter-spacing:.08em;text-transform:uppercase;color:#1d6a80;mix-blend-mode:multiply}
+.telao .sl b{font:800 11.5cqw/1.1 var(--display);color:#003546;mix-blend-mode:multiply;margin-top:2cqw}
+/* selos nas etiquetas */
+.pin .selo{position:absolute;bottom:calc(100% + 3px);left:6px;padding:2px 7px;border-radius:999px;font:800 10px/1.4 var(--body);letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;box-shadow:0 3px 8px rgba(0,0,0,.4)}
+.pin .selo.hot{background:#ffcf4a;color:#3a2600}
+.pin .selo.live{background:#ff4d5e;color:#fff;animation:liveP 1.6s ease-in-out infinite}
+@keyframes liveP{50%{box-shadow:0 0 0 4px rgba(255,77,94,.35)}}
+/* paciente chegando */
+.alerta{position:absolute;transform:translate(-50%,-100%);z-index:9;pointer-events:auto;background:#fff;color:#2a0d0d;border-radius:12px;padding:9px 12px 10px;min-width:210px;box-shadow:0 12px 30px rgba(0,0,0,.55);border-left:5px solid #ff3b3b;animation:alIn .35s ease-out}
+.alerta::after{content:"";position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);border:8px solid transparent;border-bottom:0;border-top-color:#fff}
+.alerta .t{display:flex;align-items:center;gap:6px;font:800 11px/1 var(--body);letter-spacing:.1em;text-transform:uppercase;color:#d81f2b}
+.alerta .t i{width:8px;height:8px;border-radius:50%;background:#ff3b3b;animation:liveP 1s infinite;box-shadow:0 0 0 0 rgba(255,59,59,.5)}
+.alerta b{display:block;font:700 15px/1.25 var(--display);margin:5px 0 8px;color:#1b0b0b}
+.alerta button{border:0;border-radius:8px;background:#d81f2b;color:#fff;font:700 12.5px var(--body);padding:6px 10px;cursor:pointer}
+.alerta .x{position:absolute;top:4px;right:6px;background:none;color:#8a5c5c;font-size:16px;padding:2px 4px}
+@keyframes alIn{from{opacity:0;transform:translate(-50%,-90%)}}
+.alerta.baixo{transform:translate(-50%,0);animation:alInB .35s ease-out}
+.alerta.baixo::after{bottom:auto;top:-8px;border:8px solid transparent;border-top:0;border-bottom-color:#fff}
+@keyframes alInB{from{opacity:0;transform:translate(-50%,-10%)}}
+/* Billy recepcionando */
+.bfala{position:absolute;transform:translate(-50%,-100%);z-index:8;pointer-events:auto;width:250px;background:#fff;color:#0b2a33;border-radius:14px;padding:12px 14px 12px;box-shadow:0 14px 34px rgba(0,0,0,.55);animation:alIn .4s ease-out;font-size:13.5px;line-height:1.4}
+.bfala::after{content:"";position:absolute;left:50%;bottom:-9px;transform:translateX(-50%);border:9px solid transparent;border-bottom:0;border-top-color:#fff}
+.bfala b{color:#0b7a4b}
+.bfala .acts{display:flex;flex-direction:column;gap:6px;margin-top:9px}
+.bfala .acts button{border:0;border-radius:9px;padding:8px 10px;font:700 12.5px var(--body);cursor:pointer;text-align:left}
+.bfala .acts .p{background:#25d366;color:#04301c}
+.bfala .acts .s{background:#e8f2ef;color:#0b2a33}
+.bfala .x{position:absolute;top:4px;right:6px;border:0;background:none;color:#7a9196;font-size:17px;cursor:pointer}
+/* teste grátis do Billy */
+.btrial{margin:4px 0 12px;padding:12px;border-radius:12px;background:rgba(37,211,102,.1);border:1px solid rgba(37,211,102,.45)}
+.btrial h4{margin:0 0 4px;font:700 15px var(--display);color:#6ff0a3}
+.btrial p{margin:0 0 8px !important;font-size:13px !important}
+.btrial input{width:100%;margin-bottom:6px;padding:9px 10px;border-radius:9px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;font-size:14px}
+.btrial .btn{width:100%;padding:10px;background:#25d366;color:#04301c}
+.btrial .ok{font-size:13.5px;color:var(--ink);line-height:1.45}
+/* prova social */
+.d-prova{display:inline-flex;align-items:center;gap:6px;margin:2px 0 8px;padding:4px 10px;border-radius:999px;background:rgba(170,218,199,.12);color:var(--accent);font-size:13px;font-weight:600}
+.room-card .pv{color:var(--accent);font-size:12px;font-weight:600}
+.paused .stage img,.paused #spots,.paused .tela-layer,.paused .pin .n::after{animation-play-state:paused}
+@media (prefers-reduced-motion:reduce){.stage img,#spots,.tela-layer,.pin .n::after{animation:none}}
+.head-acts{display:flex;gap:14px;align-items:center}
+.room-card .n{display:none}
+.map-foot{display:flex;justify-content:space-between;gap:12px;padding:10px 18px;font-size:12.5px;color:var(--muted);border-top:1px solid var(--line)}
+.snd-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);border-radius:8px;padding:5px 10px;font-size:12.5px;font-weight:600}
+.snd-btn[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.linkish{background:none;border:0;color:var(--muted);text-decoration:underline;padding:0;font-size:12.5px}
+
+/* setores em lista */
+.rooms-list{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0 0}
+.room-card{text-align:left;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--c);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.room-card:hover{background:var(--panel-2)}
+.room-card small{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.room-card b{font-family:var(--display);font-size:17px}
+.room-card > span:last-child{display:flex;flex-direction:column;gap:4px;font-size:inherit;color:var(--ink)}
+.room-card b{display:block;line-height:1.2}
+.room-card > span > span{font-size:13px;color:var(--muted)}
+
+section.block{padding:56px 0 8px}
+section.block > .wrap > h2{font-size:clamp(24px,3vw,32px);margin:8px 0 6px}
+section.block > .wrap > p.lead{color:var(--muted);max-width:62ch;margin:0 0 22px}
+
+/* plantões prontos */
+.missions{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.mission{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.mission .lvl{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.mission h3{font-size:20px}
+.mission p{margin:0;color:var(--muted);font-size:14px}
+.mission ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;font-size:13.5px}
+.mission li{display:flex;justify-content:space-between;gap:8px;border-top:1px dashed var(--line);padding-top:6px}
+.mission li span{color:var(--muted)}
+.mission .foot{margin-top:auto;display:flex;align-items:end;justify-content:space-between;gap:8px;padding-top:6px}
+.price{font:700 20px var(--display)}
+.price small{display:block;font:500 12px var(--body);color:var(--muted)}
+
+.btn{border:0;border-radius:9px;padding:9px 14px;font-weight:700;font-size:14px;background:var(--accent);color:var(--accent-ink);white-space:nowrap}
+.btn:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.ghost:hover{border-color:var(--muted)}
+.btn.sm{padding:6px 10px;font-size:13px;border-radius:8px}
+.btn[disabled]{background:var(--panel-2);color:var(--muted);cursor:default;filter:none;border:1px solid var(--line)}
+.btn.in{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+
+/* tabela de preço */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}
+.box h3{font-size:18px;margin-bottom:10px}
+.box p,.box li{color:var(--muted);font-size:14.5px}
+.box ul{padding-left:18px;margin:8px 0 0;display:flex;flex-direction:column;gap:6px}
+.box li b{color:var(--ink)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+td.r,th.r{text-align:right}
+.bar{height:6px;border-radius:3px;background:var(--accent);opacity:.7}
+.names{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.chip{border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:14px;background:var(--panel-2)}
+.chip.on{border-color:var(--accent);color:var(--accent)}
+footer{padding:40px 0 60px;color:var(--muted);font-size:13px}
+
+/* gavetas */
+.scrim{position:fixed;inset:0;background:rgba(3,8,12,.6);z-index:40;opacity:0;pointer-events:none;transition:opacity .2s}
+.scrim.on{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;height:100%;width:min(560px,100%);background:var(--panel);border-left:1px solid var(--line);z-index:50;transform:translateX(102%);transition:transform .25s ease;display:flex;flex-direction:column}
+.drawer.on{transform:none}
+@media (prefers-reduced-motion:reduce){.drawer,.scrim{transition:none}}
+.d-head{padding:20px 22px 14px;border-bottom:1px solid var(--line);position:relative}
+.d-head .x{position:absolute;top:16px;right:16px;width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--panel-2);font-size:18px;line-height:1}
+.d-head h2{font-size:26px;margin:6px 40px 6px 0}
+.d-head p{margin:0;color:var(--muted);font-size:14.5px}
+.d-stats{display:flex;gap:16px;margin-top:12px;font-size:13px;color:var(--muted)}
+.d-stats b{color:var(--ink);font-size:15px}
+.d-cart{margin-top:14px;display:flex;align-items:center;gap:14px;background:var(--panel-2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.d-cart.full{border-color:var(--accent);background:rgba(170,218,199,.08)}
+.d-cart .ic{width:34px;height:34px;border-radius:9px;background:var(--line);display:grid;place-items:center;font-weight:700;font-size:14px}
+.d-cart.full .ic{background:var(--accent);color:var(--accent-ink)}
+.d-cart .tx{flex:1;font-size:13px;color:var(--muted);line-height:1.35}
+.d-cart .tx b{display:block;color:var(--ink);font-size:15px}
+.d-cart .tot{font:700 18px var(--display);white-space:nowrap}
+.d-cart.bump{animation:bump .4s ease}
+@keyframes bump{40%{transform:scale(1.03)}}
+@media (prefers-reduced-motion:reduce){.d-cart.bump{animation:none}}
+.d-body{overflow-y:auto;padding:18px 22px 30px;flex:1}
+.d-body h4{margin:18px 0 10px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.d-body h4:first-child{margin-top:0}
+.course{border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;grid-template-columns:1fr auto;gap:6px 12px;margin-bottom:10px;background:var(--panel-2)}
+.course b{font-size:16px}
+.course .meta{font-size:13px;color:var(--muted)}
+.course .acts{grid-column:2;grid-row:1 / span 2;display:flex;flex-direction:column;align-items:end;gap:6px}
+.course a.sm{font-size:12.5px}
+.tagx{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-radius:6px;padding:2px 7px;background:rgba(170,218,199,.14);color:var(--accent);margin-left:6px;vertical-align:2px}
+.tagx.warm{background:rgba(240,163,94,.15);color:var(--warm)}
+.mod{border:1px solid var(--line);border-radius:12px;margin-bottom:8px;overflow:hidden}
+.mod-row{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:12px 14px}
+.mod-row .tg{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--panel-2);display:grid;place-items:center;font-size:14px;transition:transform .2s}
+.mod.open .tg{transform:rotate(90deg)}
+.mod-row b{font-size:15px;display:block}
+.mod-row .meta{font-size:12.5px;color:var(--muted)}
+.mod-row .right{display:flex;align-items:center;gap:10px}
+.mod-row .right .p{font-weight:700;font-size:14px}
+.lessons{display:none;border-top:1px solid var(--line);background:rgba(0,0,0,.15)}
+.mod.open .lessons{display:block}
+.les{display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center;padding:8px 14px 8px 16px;font-size:13.5px;border-bottom:1px solid rgba(20,80,99,.6)}
+.les:last-child{border-bottom:0}
+.les .play{width:22px;height:22px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;font-size:9px;color:var(--muted)}
+.les .d{color:var(--muted);font-size:12.5px}
+.talks{margin:5px 0 2px;padding-left:16px;color:var(--muted);font-size:12.5px;line-height:1.4;display:flex;flex-direction:column;gap:3px}
+.les .p{font-weight:600;font-size:13px;min-width:62px;text-align:right}
+.search{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;margin:0 0 16px}
+.search label{display:block;font:700 18px var(--display);margin-bottom:10px}
+.sbox{position:relative;display:flex;align-items:center}
+.sbox svg{position:absolute;left:14px;width:20px;height:20px;color:var(--muted);pointer-events:none}
+.sbox input{width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:12px;padding:13px 44px 13px 44px;outline:none;transition:border-color .2s}
+.sbox input:focus{border-color:var(--accent)}
+.sbox input::placeholder{color:#7aa3ab}
+.sbox input::-webkit-search-cancel-button{display:none}
+.sbox .clr{position:absolute;right:8px;width:30px;height:30px;border-radius:50%;border:0;background:var(--panel-2);color:var(--muted);font-size:16px;display:none}
+.sbox.has .clr{display:block}
+.schips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;align-items:center;font-size:13px;color:var(--muted)}
+.schips button{border:1px solid var(--line);background:var(--panel-2);border-radius:999px;padding:4px 10px;font-size:13px;color:var(--ink)}
+.schips button:hover{border-color:var(--accent)}
+#results:empty{display:none}
+#results{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+.r-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;font-size:14px;color:var(--muted)}
+.r-head b{color:var(--ink)}
+.r-sub{font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:14px 0 6px}
+.rrow{display:grid;grid-template-columns:auto 1fr auto auto;gap:12px;align-items:center;padding:9px 10px;border-radius:10px;border:1px solid transparent}
+.rrow:hover{background:var(--panel-2);border-color:var(--line)}
+.rrow .k{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:5px;background:var(--line);white-space:nowrap}
+.rrow .k.c{background:var(--accent);color:var(--accent-ink)}
+.rrow .k.m{background:#1d6a80}
+.rrow b{display:block;font-size:14.5px;font-weight:600}
+.rrow span.ctx{display:block;font-size:12.5px;color:var(--muted)}
+.rrow span.ctx i{font-style:normal;color:var(--c)}
+.rrow .p{font-weight:700;font-size:14px;white-space:nowrap;text-align:right}
+.rrow .p small{display:block;font-weight:500;font-size:11.5px;color:var(--muted)}
+.rrow mark{background:rgba(170,218,199,.22);color:var(--ink);border-radius:3px;padding:0 1px}
+.r-more{margin-top:8px}
+.r-none{color:var(--muted);font-size:14px;padding:6px 2px}
+@media (max-width:700px){.search{padding:14px}.rrow{grid-template-columns:1fr auto;gap:6px 10px}.rrow .k{display:none}.rrow .p{grid-column:1;text-align:left}.rrow .p small{display:inline;margin-left:6px}.rrow > .btn{grid-row:1 / span 2;grid-column:2}}
+.note{font-size:13px;color:var(--muted);background:var(--panel-2);border:1px dashed var(--line);border-radius:10px;padding:10px 12px;margin:0 0 12px}
+
+/* carrinho */
+.cart-items{display:flex;flex-direction:column;gap:8px}
+.ci{display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--panel-2)}
+.ci .k{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border-radius:5px;background:var(--line);color:var(--ink)}
+.ci .k.c{background:var(--accent);color:var(--accent-ink)}
+.ci .k.m{background:#1d6a80}
+.ci b{font-size:14px;display:block}
+.ci span{font-size:12px;color:var(--muted)}
+.ci .rm{border:0;background:none;color:var(--muted);font-size:18px}
+.sum{margin-top:16px;border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:6px;font-size:14.5px}
+.sum div{display:flex;justify-content:space-between}
+.sum .tot{font:700 22px var(--display);margin-top:4px}
+.hint{border:1px solid rgba(229,196,106,.4);background:rgba(229,196,106,.08);border-radius:10px;padding:10px 12px;font-size:13.5px;margin-top:10px;display:flex;justify-content:space-between;gap:10px;align-items:center}
+.empty{color:var(--muted);text-align:center;padding:30px 10px;border:1px dashed var(--line);border-radius:12px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(120px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;font-size:14px;z-index:60;transition:transform .25s}
+.toast.on{transform:translateX(-50%)}
+
+@media (max-width:920px){
+  .intro{grid-template-columns:1fr}
+  .rooms-list,.missions{grid-template-columns:repeat(2,1fr)}
+  .two{grid-template-columns:1fr}
+  nav.tabs{display:none}
+  .cart-btn{margin-left:auto}
+}
+@media (max-width:700px){
+  /* celular: mapa inteiro na largura da tela, salas com número grande; o mapa detalhado abre pelo botão Ampliar */
+  .map-card:not(.zoomed) .pin{padding:3px 8px 3px 3px;gap:5px;border-radius:9px}
+  .map-card:not(.zoomed) .pin .n{width:18px;height:18px;font-size:10px}
+  .map-card:not(.zoomed) .pin .n::after{inset:-3px}
+  .map-card:not(.zoomed) .pin .full,.map-card:not(.zoomed) .pin small{display:none}
+  .map-card:not(.zoomed) .pin .short{display:block;font-size:10.5px}
+  .map-card.zoomed .stage{width:980px}
+  .map-card:not(.zoomed) .pin[data-room="gatil"]{left:50%!important;top:21%!important}
+  .map-card:not(.zoomed) .pin[data-room="lab"]{left:79%!important;top:22%!important}
+  #pause{display:none}
+  .zoom-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--panel-2);border-radius:8px;padding:6px 10px;font-size:12.5px;font-weight:600}
+  .map-head{padding:10px 12px}
+  .map-head .live{font-size:11px}
+  .map-foot{flex-direction:column;gap:4px;padding:10px 12px}
+  .zoom-hint{display:none}
+  .map-card.zoomed .zoom-hint{display:block;font-size:12px;color:var(--muted);padding:8px 12px 0}
+  .rooms-list{grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+  .room-card{padding:10px 12px;border-left-width:1px;flex-direction:row;align-items:center;gap:10px}
+  .room-card .n{display:grid;place-items:center;flex:none;width:12px;height:12px;border-radius:50%;background:var(--c);color:#00202b;font:700 14px var(--display)}
+  .room-card small{display:none}
+  .room-card b{font-size:14px;line-height:1.2;display:block}
+  .room-card > span > span{font-size:12px}
+  .room-card > span:last-child{gap:2px}
+  .brand small{display:none}
+  .brand b{font-size:13px}
+  .brand-logo{height:26px}.brand-sep{display:none}
+  .brand > span:last-child{display:none}
+  .cart-btn{padding:7px 10px;font-size:13px;gap:6px}
+  .cart-btn .lbl{display:none}
+  .wrap{padding:0 16px}
+  .intro{padding-top:24px;gap:18px}
+  .course{grid-template-columns:1fr}
+  .course .acts{grid-column:1;grid-row:auto;flex-direction:row;align-items:center;justify-content:space-between}
+  .mod-row{grid-template-columns:auto 1fr;row-gap:8px}
+  .mod-row .right{grid-column:1 / -1;justify-content:space-between;padding-left:38px}
+  .d-head{padding:16px 16px 12px}
+  .d-head h2{font-size:22px}
+  .d-body{padding:14px 16px 28px}
+  .d-cart{flex-wrap:wrap;gap:10px}
+  .d-cart .tx{min-width:55%}
+  .d-cart .btn{width:100%}
+  .ci{grid-template-columns:1fr auto auto}
+  .ci .k{display:none}
+  table{font-size:13px}
+  th:last-child,td:last-child{display:none}
+}
+@media (max-width:560px){
+  .steps,.rooms-list,.missions,.stats{grid-template-columns:1fr}
+  .stats{grid-template-columns:repeat(3,1fr)}
+  .rooms-list{grid-template-columns:1fr 1fr}
+  .stat{padding:10px}
+  .stat b{font-size:22px}
+  .les{grid-template-columns:1fr auto auto}
+  .les .play{display:none}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#mapa"><img class="brand-logo" src="logo-play-light.png" alt="Intensivet Play"><span class="brand-sep"></span><span><b>HOSPITAL INTENSIVET</b><small>Formação em medicina intensiva</small></span></a>
+    <nav class="tabs"><a href="#mapa">Mapa</a><a href="#plantoes">Plantões prontos</a><a href="#precos">Como cobramos</a></nav>
+    <button class="cart-btn" id="openCart" type="button"><span class="lbl">Meu plantão</span> <span class="badge num" id="cartCount">0</span> <span class="num" id="cartTop">R$ 0</span></button>
+  </div>
+</header>
+
+<main>
+<div class="wrap">
+  <div class="intro">
+    <div>
+      <div class="eyebrow">Protótipo · primeira versão</div>
+      <h1>Entre no hospital. <span>Escolha o setor e monte sua formação.</span></h1>
+      <p>Cada setor do hospital guarda os cursos, módulos e aulas daquele tema. Leve o curso inteiro, só o módulo que falta ou uma aula avulsa. O carrinho soma as horas-aula e o preço.</p>
+    </div>
+    <div class="stats">
+      <div class="stat"><b class="num" id="stH">0h</b><span>horas-aula (50 min)</span></div>
+      <div class="stat"><b class="num" id="stA">0</b><span>aulas avulsas</span></div>
+      <div class="stat"><b class="num" id="stS">4.000+</b><span>alunos na plataforma</span></div>
+    </div>
+  </div>
+  <div class="steps">
+    <div class="step"><i>01</i><div><b>Entre por um setor</b><span>ou comece por um plantão pronto</span></div></div>
+    <div class="step"><i>02</i><div><b>Escolha o tamanho</b><span>curso, módulo ou aula avulsa</span></div></div>
+    <div class="step"><i>03</i><div><b>Feche seu plantão</b><span>horas-aula e preço somados</span></div></div>
+  </div>
+
+  <div class="search" id="busca" role="search">
+    <label for="q">O que você quer aprender?</label>
+    <div class="sbox" id="sbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" autocomplete="off" placeholder="Digite um tema: noradrenalina, dispneia, gato obstruído, transfusão…">
+      <button class="clr" type="button" id="qClear" aria-label="Limpar busca">×</button></div>
+    <div class="schips">Experimente: <button type="button" data-q="noradrenalina">noradrenalina</button><button type="button" data-q="dispneia">dispneia</button><button type="button" data-q="parada cardíaca">parada cardíaca</button><button type="button" data-q="gato">gato</button><button type="button" data-q="transfusão">transfusão</button><button type="button" data-q="intubação">intubação</button></div>
+    <div id="results" aria-live="polite"></div>
+  </div>
+
+  <div class="map-card" id="mapa">
+    <div class="map-head"><span class="live">Mapa do hospital</span><span class="head-acts"><button class="snd-btn" id="sound" type="button" aria-pressed="true" title="Ao passar o mouse, cada sala toca um som">🔊 Sons ligados</button><button class="zoom-btn" id="zoom" type="button" aria-pressed="false">⤢ Ampliar mapa</button><button class="linkish" id="pause" type="button">Pausar movimento</button></span></div>
+    <div class="zoom-hint">Arraste para o lado para ver o hospital inteiro.</div>
+    <div class="map-scroll">
+      <div class="stage" id="plan">
+        <img src="hospital.webp" srcset="hospital-1000.webp 1000w, hospital.webp 2000w" sizes="(max-width:700px) 1000px, 1180px" width="2000" height="1116" alt="Ilustração do Hospital Intensivet visto de cima: internação, gatil, laboratório, sala de emergência, recepção, centro cirúrgico, diretoria, auditório e estacionamento com ambulância">
+        <div class="tela-layer"><div aria-hidden="true"><div class="ecg" style="left:17.75%;top:7.8%;width:1.25%;height:1.35%"><svg viewBox="0 0 200 24" preserveAspectRatio="none"><path d="M0 12 L18 12 L21 9 L24 12 L28 12 L30 14 L33 2 L36 20 L39 12 L46 12 L50 8 L56 12 L68 12 L71 9 L74 12 L78 12 L80 14 L83 2 L86 20 L89 12 L96 12 L100 8 L106 12 L118 12 L121 9 L124 12 L128 12 L130 14 L133 2 L136 20 L139 12 L146 12 L150 8 L156 12 L168 12 L171 9 L174 12 L178 12 L180 14 L183 2 L186 20 L189 12 L196 12 L200 8 L200 12"/></svg></div><div class="ecg" style="left:33.6%;top:7.8%;width:1.25%;height:1.35%"><svg viewBox="0 0 200 24" preserveAspectRatio="none"><path d="M0 12 L18 12 L21 9 L24 12 L28 12 L30 14 L33 2 L36 20 L39 12 L46 12 L50 8 L56 12 L68 12 L71 9 L74 12 L78 12 L80 14 L83 2 L86 20 L89 12 L96 12 L100 8 L106 12 L118 12 L121 9 L124 12 L128 12 L130 14 L133 2 L136 20 L139 12 L146 12 L150 8 L156 12 L168 12 L171 9 L174 12 L178 12 L180 14 L183 2 L186 20 L189 12 L196 12 L200 8 L200 12"/></svg></div><div class="siren-glow" style="left:11%;top:86%"></div><div class="siren a" style="left:9.45%;top:79.6%"></div><div class="siren b" style="left:9.1%;top:82.1%"></div><div class="siren r" style="left:17.1%;top:85.9%"></div><div class="emcir" style="left:66.1%;top:32.6%"><span>EM CIRURGIA</span></div></div><div class="telao" aria-hidden="true" style="left:81.6%;top:54.84%;width:9.45%;height:7.97%"><div class="sl on"><img src="logo-play-cor.png" alt=""></div><div class="sl"><small>Mais vendido</small><b>Sala Vermelha</b></div><div class="sl"><small>Em destaque</small><b>Trilha do Trauma</b></div><div class="sl"><small>Simpósios</small><b>Assista às gravações</b></div></div><div id="fx"></div><button class="billy" id="billyBtn" type="button" style="left:48%;top:85.5%" aria-label="Billy, seu agente de estudos no WhatsApp"><svg viewBox="0 -12 100 136" aria-hidden="true"> <defs> <radialGradient id="bf" cx="40%" cy="35%" r="75%"><stop offset="0" stop-color="#ecbb73"/><stop offset=".6" stop-color="#d49a52"/><stop offset="1" stop-color="#a8702f"/></radialGradient> <radialGradient id="bh" cx="40%" cy="30%" r="80%"><stop offset="0" stop-color="#f0c27c"/><stop offset=".65" stop-color="#d69c55"/><stop offset="1" stop-color="#ad7432"/></radialGradient> <linearGradient id="bl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f8e2bb"/><stop offset="1" stop-color="#e8c58d"/></linearGradient> <linearGradient id="be" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b47a37"/><stop offset="1" stop-color="#8a5824"/></linearGradient> <radialGradient id="wa" cx="35%" cy="30%" r="80%"><stop offset="0" stop-color="#4be283"/><stop offset="1" stop-color="#1ea952"/></radialGradient> </defs> <ellipse cx="52" cy="116" rx="30" ry="5.5" fill="#000" opacity=".32"/> <path d="M70 112 C84 114 92 108 90 99" fill="none" stroke="#b67d3a" stroke-width="5.5" stroke-linecap="round"/> <ellipse cx="66" cy="96" rx="15" ry="17" fill="url(#bf)"/> <ellipse cx="72" cy="112" rx="9" ry="4" fill="#c88d47"/> <path d="M35 62 C29 82 29 102 35 113 L64 113 C73 102 72 80 63 60 Z" fill="url(#bf)"/> <path d="M41 64 C37 78 39 92 45 100 C51 92 56 78 53 64 Z" fill="url(#bl)"/> <rect x="37" y="86" width="8" height="27" rx="4" fill="#d29850"/> <rect x="50" y="86" width="8" height="27" rx="4" fill="#cf954d"/> <ellipse cx="41" cy="113" rx="6" ry="3.2" fill="url(#bl)"/> <ellipse cx="54" cy="113" rx="6" ry="3.2" fill="url(#bl)"/> <path d="M34 60 Q48 67 63 59 L63.5 64 Q48 72 34.5 65 Z" fill="#1ea952"/> <circle cx="48" cy="69" r="2.6" fill="#f3d27a" stroke="#b8902e" stroke-width=".6"/> <path d="M35 32 C25 34 24 52 29 58 C34 59 37 50 38 40 Z" fill="url(#be)"/> <path d="M61 32 C71 34 72 52 67 58 C62 59 59 50 58 40 Z" fill="url(#be)"/> <ellipse cx="48" cy="42" rx="15.5" ry="15" fill="url(#bh)"/> <ellipse cx="48" cy="50.5" rx="8.5" ry="6.5" fill="url(#bl)"/> <ellipse cx="48" cy="46.6" rx="3.4" ry="2.5" fill="#2a1b12"/> <ellipse cx="47" cy="45.9" rx="1" ry=".6" fill="#fff" opacity=".6"/> <path d="M48 49 L48 51.5 M44.5 52.5 Q48 55 51.5 52.5" stroke="#2a1b12" stroke-width="1.1" fill="none" stroke-linecap="round"/> <path d="M46.6 53.4 Q48 57.5 49.4 53.4 Z" fill="#ef7f8f"/> <ellipse cx="42.3" cy="39.5" rx="2.3" ry="2.6" fill="#2a1b12"/> <ellipse cx="53.7" cy="39.5" rx="2.3" ry="2.6" fill="#2a1b12"/> <circle cx="43" cy="38.6" r=".8" fill="#fff"/> <circle cx="54.4" cy="38.6" r=".8" fill="#fff"/> <path d="M39.5 35.2 Q42.3 33.8 45 35" stroke="#9c6630" stroke-width=".9" fill="none" stroke-linecap="round"/> <path d="M51 35 Q53.7 33.8 56.5 35.2" stroke="#9c6630" stroke-width=".9" fill="none" stroke-linecap="round"/> <g transform="translate(48 28) scale(1.4) translate(-48 -28)"><g class="wa"> <path d="M48 2.5 C40.5 2.5 34.5 8.3 34.5 15.5 C34.5 18 35.2 20.3 36.5 22.3 L35 27.5 L40.5 26 C42.6 27.3 45.2 28 48 28 C55.5 28 61.5 22.3 61.5 15.2 C61.5 8.2 55.5 2.5 48 2.5 Z" fill="url(#wa)" stroke="#fff" stroke-width="1.6"/> <path d="M43.3 10.6 C43.9 10.2 44.6 10.3 44.9 10.9 L46.1 13.3 C46.3 13.8 46.2 14.3 45.8 14.6 L45 15.3 C45.7 16.9 47 18.2 48.6 18.9 L49.3 18.1 C49.6 17.7 50.2 17.6 50.6 17.8 L53 19 C53.6 19.3 53.7 20 53.3 20.6 L52.6 21.4 C51.8 22.3 50.4 22.6 49.2 22.1 C45.6 20.6 42.9 17.9 41.6 14.3 C41.2 13.1 41.6 11.8 42.5 11.1 Z" fill="#fff"/> </g></g> </svg><span class="tip"><b>Billy</b>seu agente de estudos</span></button></div>
+        <div class="dim-layer" aria-hidden="true"><div class="dim" id="dim"></div></div>
+        <div id="spots"></div>
+      </div>
+    </div>
+    <div class="map-foot"><span>Representação ilustrativa. Clique em um setor para ver cursos, módulos e aulas.</span><a href="#plantoes" style="color:var(--accent);font-weight:600;text-decoration:none">Ver plantões prontos →</a></div>
+  </div>
+
+  <div class="rooms-list" id="roomsList"></div>
+</div>
+
+<section class="block" id="plantoes">
+  <div class="wrap">
+    <div class="eyebrow">Recepção</div>
+    <h2>Plantões prontos</h2>
+    <p class="lead">Para quem não quer montar do zero: combinações de cursos completos por momento de carreira. Dá para colocar no carrinho e depois trocar peças.</p>
+    <div class="missions" id="missions"></div>
+  </div>
+</section>
+
+<section class="block" id="precos">
+  <div class="wrap">
+    <div class="eyebrow">Regra de preço · simulação</div>
+    <h2>Como cobramos</h2>
+    <p class="lead">Tudo é calculado em hora-aula de 50 minutos. Quanto maior o pacote, menor o preço por hora-aula. Assim a aula avulsa resolve uma dúvida pontual e o curso completo continua sendo o melhor negócio.</p>
+    <div class="two">
+      <div class="box">
+        <h3>Regra usada neste protótipo</h3>
+        <ul>
+          <li><b>Base de tudo:</b> 1 hora-aula = 50 minutos de vídeo. Uma aula de 25 minutos vale 0,5 h/a.</li>
+          <li><b>Aula avulsa:</b> R$ 45 por hora-aula, mínimo de R$ 14,90.</li>
+          <li><b>Módulo avulso:</b> R$ 33 por hora-aula, mínimo de R$ 59,90.</li>
+          <li><b>Curso completo:</b> o preço de hoje na página de vendas (entre R$ 16 e R$ 126 por hora-aula).</li>
+          <li><b>Desconto por volume</b> nos avulsos: 10% a partir de 12 h/a e 20% a partir de 30 h/a.</li>
+          <li>Quando o aluno já tem no carrinho boa parte de um curso, o site sugere trocar pelo curso completo.</li>
+        </ul>
+        <p style="margin-top:12px">Os valores dos avulsos são ilustrativos, para discussão. Horas-aula calculadas sobre o tempo de vídeo no Vimeo.</p>
+      </div>
+      <div class="box">
+        <h3>Preço por hora-aula dos cursos de hoje</h3>
+        <table><thead><tr><th>Curso</th><th class="r">Preço</th><th class="r">H/a</th><th class="r">R$/h-a</th><th style="width:22%"></th></tr></thead><tbody id="pph"></tbody></table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="nome">
+  <div class="wrap">
+    <div class="eyebrow">Nome da vitrine</div>
+    <h2>Que nome dar a esse lugar?</h2>
+    <p class="lead">"Vitrine" ficou genérico. Como o site é um hospital que o aluno percorre, o nome pode dizer isso. Clique para testar no topo.</p>
+    <div class="names" id="names"></div>
+  </div>
+</section>
+</main>
+
+<footer><div class="wrap">Protótipo para discussão interna da Intensivet · dados de cursos, módulos e aulas da Astron (club Intensivet) · durações do Vimeo · preços dos cursos completos copiados das páginas de vendas em 06/11/2026. Nenhuma compra é feita aqui. Sons: miado (CC0) e latido "Barking of a dog" (CC BY-SA 3.0), do Wikimedia Commons; demais sons gerados no navegador.</div></footer>
+
+<div class="scrim" id="scrim"></div>
+<div class="bpop" id="billyPop" role="dialog" aria-modal="true" aria-labelledby="billyTitle">
+  <div class="card">
+    <button class="x" type="button" id="billyClose" aria-label="Fechar">×</button>
+    <div class="hd"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4C16.5 4 4 16.1 4 31c0 5.2 1.5 10 4.2 14.1L5 59l14.3-3.6C23.1 57.4 27.4 58 32 58c15.5 0 28-12.1 28-27S47.5 4 32 4z" fill="#25d366"/><path d="M32 7.5C18.4 7.5 7.5 18 7.5 31c0 4.7 1.4 9 3.9 12.7l-2.1 8.5 8.8-2.2c3.6 2.1 8 3.3 13.9 3.3 13.6 0 24.5-10.5 24.5-23.5S45.6 7.5 32 7.5z" fill="#fff" opacity=".18"/><g fill="#fff"><path d="M19.5 17.5c-3.6 0-6.2 4.7-5.6 10.3.4 3.6 2.3 6 4.6 6 1.4 0 2.3-1.3 2.6-3.1l1.7-9.5c.4-2.2-1.1-3.7-3.3-3.7zM44.5 17.5c3.6 0 6.2 4.7 5.6 10.3-.4 3.6-2.3 6-4.6 6-1.4 0-2.3-1.3-2.6-3.1l-1.7-9.5c-.4-2.2 1.1-3.7 3.3-3.7z"/><path d="M32 16.5c-7.4 0-11.5 5.4-11.5 12.3 0 4.3 1.3 8.1 3.5 10.8 1.9 2.4 4.9 4.4 8 4.4s6.1-2 8-4.4c2.2-2.7 3.5-6.5 3.5-10.8 0-6.9-4.1-12.3-11.5-12.3z"/></g><g fill="#0b4d3a"><circle cx="27.3" cy="28.2" r="1.9"/><circle cx="36.7" cy="28.2" r="1.9"/><path d="M28.6 34.2c0-1.4 1.6-2.2 3.4-2.2s3.4.8 3.4 2.2c0 1.2-1.6 2.5-3.4 2.5s-3.4-1.3-3.4-2.5z"/></g><path d="M29.4 38.6c.8.9 1.6 1.3 2.6 1.3s1.8-.4 2.6-1.3" stroke="#0b4d3a" stroke-width="1.4" fill="none" stroke-linecap="round"/><path d="M30.6 40.2c0 1.7.6 3 1.4 3s1.4-1.3 1.4-3z" fill="#ff7a8a"/></svg><div><h3 id="billyTitle">Billy</h3><small>Seu agente de estudos no WhatsApp</small></div></div>
+    <p>O Billy não é professor. Ele é quem conhece cada sala do Hospital Intensivet: circula pelos corredores, sabe o que cada professor ensina e onde está cada aula. E conversa com você pelo WhatsApp, quando bater a vontade de estudar.</p>
+    <ol>
+      <li>Você conta o tema que quer estudar.</li>
+      <li>O Billy explica o conceito por escrito, de um jeito simples.</li>
+      <li>Ele leva você até a sala e a aula certa para aprofundar, e a aula chega no seu WhatsApp.</li>
+    </ol>
+    <p class="fine">Ferramenta de estudo. Não substitui a avaliação do médico-veterinário responsável pelo paciente.</p>
+    <div class="btrial" id="btrial">
+      <h4>Experimente grátis: 3 perguntas</h4>
+      <p>Deixe seu WhatsApp e o Billy chama você para 3 perguntas de estudo grátis. Ele já fica salvo no seu celular.</p>
+      <form id="btForm"><input id="btNome" placeholder="Seu nome" autocomplete="off" required><input id="btZap" placeholder="WhatsApp com DDD" inputmode="tel" autocomplete="off" required><button class="btn" type="submit">Quero testar o Billy</button></form>
+    </div>
+    <div class="plan"><span>Plano a definir<br>(mensal, semestral ou anual)</span><span><b class="num" id="billyPrice"></b> /mês<br><small>valor de simulação</small></span></div>
+    <div class="acts"><a class="btn ghost" href="#" id="billyMore">Saiba mais</a><button class="btn" type="button" id="billyAdd">Colocar no carrinho</button></div>
+  </div>
+</div>
+<aside class="drawer" id="roomDrawer" aria-hidden="true" aria-labelledby="rdTitle">
+  <div class="d-head">
+    <button class="x" type="button" data-close aria-label="Fechar">×</button>
+    <div class="eyebrow" id="rdEyebrow"></div>
+    <h2 id="rdTitle"></h2>
+    <div class="d-spo" id="rdSponsor" hidden></div>
+    <div class="d-prova" id="rdProva" hidden></div>
+    <p id="rdDesc"></p>
+    <div class="d-stats" id="rdStats"></div>
+    <div class="d-cart" id="rdCart"></div>
+  </div>
+  <div class="d-body" id="rdBody"></div>
+</aside>
+<aside class="drawer" id="cartDrawer" aria-hidden="true" aria-labelledby="cdTitle">
+  <div class="d-head">
+    <button class="x" type="button" data-close aria-label="Fechar">×</button>
+    <div class="eyebrow">Carrinho</div>
+    <h2 id="cdTitle">Meu plantão</h2>
+    <p>Junte cursos, módulos e aulas de qualquer setor.</p>
+  </div>
+  <div class="d-body" id="cdBody"></div>
+</aside>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const DATA = /*DATA*/;
+
+const ROOMS = [
+  {id:"uti", short:"UTI", n:"Internação / UTI", c:"var(--blue)", fill:"#06394a", x:40,y:40,w:380,h:220, d:"Hemodinâmica, ventilação, monitorização, fluidos e as especialidades do paciente internado."},
+  {id:"gatil", short:"Gatil", n:"Gatil", c:"var(--violet)", fill:"#241f45", x:430,y:40,w:170,h:220, d:"Fisiologia e emergências do paciente felino."},
+  {id:"lab", short:"Lab", n:"Laboratório e Imagem", c:"var(--gold)", fill:"#2e2a16", x:610,y:40,w:350,h:220, d:"Gasometria, patologia clínica, hematologia, transfusão e imagem à beira do leito."},
+  {id:"emergencia", short:"Emergência", n:"Sala de Emergência", c:"var(--red)", fill:"#3a1b20", x:40,y:270,w:380,h:222, d:"Os primeiros minutos: protocolos, RCP, trauma, sepse e intoxicações."},
+  {id:"cirurgia", short:"Cirurgia", n:"Centro Cirúrgico", c:"var(--accent)", fill:"#0b3f3a", x:610,y:270,w:350,h:130, d:"Anestesia do doente grave, feridas e ortopedia de urgência."},
+  {id:"diretoria", short:"Diretoria", n:"Diretoria", c:"var(--muted)", fill:"#0a2f3b", x:610,y:410,w:170,h:82, d:"Gestão hospitalar, direito médico, psicologia e cuidados paliativos."},
+  {id:"auditorio", short:"Auditório", n:"Auditório", c:"var(--warm)", fill:"#3a2a18", x:790,y:410,w:170,h:82, d:"Palestras dos simpósios Intensivet e conteúdos de atualização."},
+  {id:"aph", short:"APH", n:"Estacionamento · APH", c:"var(--warm)", fill:"#082630", x:40,y:520,w:920,h:112, d:"Atendimento pré-hospitalar: o que fazer antes do paciente entrar pela porta."}
+];
+
+const COURSES = [
+  {id:"habilidades", n:"Habilidades na Emergência", room:"aph", price:397, url:"https://intensivet.com.br/habilidades/", lvl:"Vet Skills", mods:[209745,209748,209751,209752,209757,209758,209759]},
+  {id:"trauma", n:"Trilha do Trauma", room:"aph", price:949.90, url:"https://intensivet.com.br/trilha-do-trauma-conteudo-completo/", lvl:"Vet Junior", mods:[73185]},
+  {id:"abctrauma", n:"Certificação ABC Trauma", room:"aph", price:null, presencial:true, url:"https://abctrauma.intensivet.com.br/", lvl:"Vet Master", mods:[]},
+  {id:"decisao", n:"Decisão Crítica", room:"emergencia", price:1690, url:"https://decisaocritica.intensivet.com.br/", lvl:"Vet Senior", mods:[153725,153726,153727,153728,153729,153730]},
+  {id:"salavermelha", n:"Sala Vermelha", room:"emergencia", price:169, url:"https://intensivet.com.br/sala-vermelha-evento/", lvl:"Vet Junior", mods:[230330]},
+  {id:"rcp", n:"Reanimação Cardiopulmonar", room:"emergencia", price:184.20, url:"https://intensivet.com.br/reanimacao-rcp", lvl:"Vet Junior", mods:[153726]},
+  {id:"alem", n:"Além do Protocolo", room:"emergencia", price:null, url:"https://intensivet.com.br/", lvl:"Vet Junior", mods:[234747]},
+  {id:"recover", n:"Certificação RECOVER", room:"emergencia", price:null, presencial:true, url:"https://recover.intensivet.com.br/", lvl:"Vet Master", mods:[]},
+  {id:"base", n:"Base Segura", room:"uti", price:1290, url:"https://basesegura.intensivet.com.br/", lvl:"Vet Senior", mods:[153699,153700,153701,153703,153704,153705,153706,153707,153708,153709]},
+  {id:"elite", n:"Elite Clínica", room:"uti", price:2600, url:"https://eliteclinica.intensivet.com.br/", lvl:"Vet Senior", mods:[153710,153711,153712,153713,153714,153715,153716,153717,153718,153719,153720,153721,153722,153723,153724]},
+  {id:"monit", n:"Monitorização do Doente Grave", room:"uti", price:497, url:"https://monitorizacao.intensivet.com.br/", lvl:"Vet Skills", mods:[153703]},
+  {id:"hemo", n:"Bases Hemodinâmicas", room:"uti", price:265, url:"https://baseshemodinamicas.intensivet.com.br/", lvl:"Vet Skills", mods:[153699]},
+  {id:"nutri", n:"Nutrição no Paciente Grave", room:"uti", price:265, url:"https://nutricao.intensivet.com.br/", lvl:"Vet Skills", mods:[153708]},
+  {id:"estet", n:"Por Trás do Estetoscópio", room:"diretoria", price:990, url:"https://estetoscopio.intensivet.com.br/", lvl:"Vet Senior", mods:[153061,153063,153064,153698]},
+  {id:"move", n:"MOVE 2026 · Sala de Comando", room:"diretoria", price:null, evento:"28/11, online e ao vivo", url:"https://intensivet.com.br/move-sala-de-comando-evento/", lvl:"Vet Master", mods:[]},
+  {id:"summit", n:"Vet Summit Collection", room:"auditorio", price:297, url:"https://vetsummit.intensivet.com.br/", lvl:"Vet Junior", mods:[209906,209907,210096]},
+  {id:"intensiflix", n:"Intensiflix", room:"auditorio", price:null, assinatura:true, url:"https://intensivet.com.br/intensiflix/", lvl:"Assinatura", mods:[]}
+];
+
+const MISSIONS = [
+  {n:"Primeiro plantão", lvl:"Vet Junior", d:"Para quem vai assumir plantão: o essencial do pré-hospitalar e da parada.", c:["habilidades","rcp","salavermelha"]},
+  {n:"Emergencista", lvl:"Vet Senior", d:"Protocolos de sala de emergência com o trauma completo.", c:["decisao","trauma"]},
+  {n:"Intensivista de UTI", lvl:"Vet Senior", d:"Do básico do internado às especialidades. É a antiga Medicina Interna do Paciente Grave.", c:["base","elite"]},
+  {n:"Liderança e gestão", lvl:"Vet Master", d:"Para quem coordena equipe ou hospital, com os simpósios de bônus.", c:["estet","summit"]}
+];
+
+const NAMES = ["Hospital Intensivet","Plantão Intensivet","Hospital-Escola Intensivet","Intensivet Campus","Rota Intensivet"];
+
+/* ---------- índices ---------- */
+const MOD = {}, LES = {}, ROOM = {};
+ROOMS.forEach(r => ROOM[r.id] = r);
+for (const [rid, mods] of Object.entries(DATA)) for (const m of mods) {
+  m.room = rid; m.s = m.aulas.reduce((a,l)=>a+l.s,0); MOD[m.id] = m;
+  m.aulas.forEach(l => { l.mod = m.id; LES[l.id] = l; });
+}
+COURSES.forEach(c => { c.s = c.mods.reduce((a,id)=>a+(MOD[id]?MOD[id].s:0),0); });
+
+/* ---------- preço e formato ---------- */
+const r90 = v => Math.max(1, Math.ceil(v)) - 0.10;
+/* Hora-aula = 50 min. Toda a precificação parte daqui. */
+const HA = 50*60;                 // segundos em 1 hora-aula
+const PRECO_AULA_HA = 45;         // aula avulsa: R$ por hora-aula
+const PRECO_MODULO_HA = 33;       // módulo avulso: R$ por hora-aula
+const DESC = [[30,.20],[12,.10]]; // desconto nos avulsos: [h/a mínimas, %]
+const ha = s => s/HA;
+const priceLesson = s => Math.max(14.90, r90(ha(s)*PRECO_AULA_HA));
+const priceModule = s => Math.max(59.90, r90(ha(s)*PRECO_MODULO_HA));
+const brl = v => v.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+const brl0 = v => "R$ " + Math.round(v).toLocaleString("pt-BR");
+const hrs = s => ha(s).toFixed(1).replace(".",",")+" h/a";
+const mins = s => { const m = Math.floor(s/60), x = s%60; return m >= 60 ? Math.floor(m/60)+"h"+String(m%60).padStart(2,"0") : m+":"+String(x).padStart(2,"0"); };
+const esc = t => String(t).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ---------- carrinho ---------- */
+const BILLY = {id:"billy", n:"Billy · agente de estudos no WhatsApp", price:29.90}; // preço de simulação
+let cart = [];  // {k:'c'|'m'|'a'|'b', id}
+try { cart = JSON.parse(localStorage.getItem("hi_cart")||"[]"); } catch(e) {}
+cart = cart.filter(x => x.k==="b" ? x.id===BILLY.id : x.k==="c" ? COURSES.some(c=>c.id===x.id) : x.k==="m" ? MOD[x.id] : LES[x.id]);
+const save = () => { try { localStorage.setItem("hi_cart", JSON.stringify(cart)); } catch(e) {} };
+const has = (k,id) => cart.some(x => x.k===k && x.id===id);
+const courseCovering = modId => cart.filter(x=>x.k==="c").map(x=>COURSES.find(c=>c.id===x.id)).find(c=>c && c.mods.includes(modId));
+
+function itemInfo(x){
+  if (x.k==="b") return {n:BILLY.n, s:0, p:BILLY.price, sub:"Assinatura · plano a definir (simulação)"};
+  if (x.k==="c"){ const c = COURSES.find(c=>c.id===x.id); return {n:c.n, s:c.s, p:c.price, sub:"Curso completo · "+hrs(c.s)}; }
+  if (x.k==="m"){ const m = MOD[x.id]; return {n:m.n, s:m.s, p:priceModule(m.s), sub:(m.kind?"Simpósio inteiro · "+m.aulas.length+(m.kind==="blocos"?" gravações":" aulas"):"Módulo · "+m.aulas.length+" aulas")+" · "+hrs(m.s)}; }
+  const l = LES[x.id]; return {n:l.n, s:l.s, p:priceLesson(l.s), sub:(MOD[l.mod].kind==="blocos"?"Palestras do "+MOD[l.mod].n+" · ":"Aula avulsa · ")+mins(l.s)+" · "+ha(l.s).toFixed(2).replace(".",",")+" h/a · "+MOD[l.mod].n};
+}
+function add(k,id){
+  if (has(k,id)) return;
+  if (k==="c"){ const c = COURSES.find(c=>c.id===id);
+    cart = cart.filter(x => !(x.k==="m" && c.mods.includes(x.id)) && !(x.k==="a" && c.mods.includes(LES[x.id].mod)));
+    cart = cart.filter(x => !(x.k==="c" && x.id!==id && COURSES.find(o=>o.id===x.id).mods.length && COURSES.find(o=>o.id===x.id).mods.every(m=>c.mods.includes(m))));
+  }
+  if (k==="m") cart = cart.filter(x => !(x.k==="a" && LES[x.id].mod===id));
+  cart.push({k,id}); save(); refresh(); toast("Adicionado: "+itemInfo({k,id}).n);
+}
+function remove(k,id){ cart = cart.filter(x=>!(x.k===k&&x.id===id)); save(); refresh(); }
+function totals(){
+  let s=0, full=0, loose=0, looseS=0;
+  cart.forEach(x => { const i = itemInfo(x); s += i.s; if (x.k==="c" || x.k==="b") full += i.p; else { loose += i.p; looseS += i.s; } });
+  const rate = (DESC.find(([min])=>ha(looseS)>=min)||[0,0])[1];
+  const disc = loose*rate;
+  return {s, full, loose, rate, disc, total: full+loose-disc, looseS};
+}
+function suggestions(){
+  const out = [];
+  COURSES.filter(c=>c.price && c.mods.length && !has("c",c.id)).forEach(c => {
+    let v = 0, n = 0;
+    cart.forEach(x => {
+      if (x.k==="m" && c.mods.includes(x.id)) { v += priceModule(MOD[x.id].s); n++; }
+      if (x.k==="a" && c.mods.includes(LES[x.id].mod)) { v += priceLesson(LES[x.id].s); n++; }
+    });
+    if (n && v >= c.price*0.6) out.push({c, v});
+  });
+  return out.sort((a,b)=>b.v-a.v).slice(0,2);
+}
+
+/* ---------- mapa ---------- */
+const roomH = id => (DATA[id]||[]).reduce((a,m)=>a+m.s,0);
+/* patrocínio por setor: aparece no mapa ao passar o mouse e no topo do setor */
+const SPONSORS = {
+  uti:      {nome:"Vetnil",      logo:"pat-vetnil.png",      lado:"baixo"},
+  gatil:    {nome:"Vetex",       logo:"pat-vetex.png",       lado:"baixo"},
+  cirurgia: {nome:"Royal Canin", logo:"pat-royal-canin.png", lado:"direita"}
+};
+/* selos (dados reais: Guru últimos 90 dias e agenda do MOVE) */
+const SELOS = { emergencia:["hot","Mais vendido"] };
+/* prova social: alunos que já estudaram aulas de cada sala (Astron, progresso > 0) */
+const PROVA = {"aph": 327, "emergencia": 873, "lab": 271, "uti": 271, "gatil": 271, "cirurgia": 230, "diretoria": 230, "auditorio": 428};
+const fmtN = n => n.toLocaleString("pt-BR");
+const roomA = id => (DATA[id]||[]).reduce((a,m)=>a+m.aulas.length,0);
+/* área clicável [x1,y1,x2,y2] e etiqueta [x,y], em % da imagem (2000 x 1116) */
+const SPOTS = {
+  uti:[7,5,40.5,36, 24,21], gatil:[41.5,5,59,25, 50,13], lab:[59.5,5,94,31, 68,13],
+  emergencia:[3,36.5,40,66, 21,42], recepcao:[40.5,26,59.5,66, 50,47], cirurgia:[60,32.5,95,52.5, 71,38],
+  diretoria:[60.5,53,77,85, 68,62], auditorio:[77.5,53,96,85, 87,74], aph:[0,77,55.5,100, 31,81]
+};
+function hl(box, id, on){ box.querySelectorAll(`[data-room="${id}"]`).forEach(x=>x.classList.toggle("hl", on));
+  const d = document.getElementById("dim"), s = SPOTS[id];
+  if (on && s){ d.style.left = s[0]+"%"; d.style.top = s[1]+"%"; d.style.width = (s[2]-s[0])+"%"; d.style.height = (s[3]-s[1])+"%"; d.classList.add("on"); }
+  else if (!on) d.classList.remove("on");
+  document.querySelector(".map-card").classList.toggle("hot-aph", on && id==="aph"); }
+function drawMap(){
+  const list = ROOMS.map((r,i)=>({id:r.id, n:r.n, short:r.short, c:r.c, num:i+1, sub:hrs(roomH(r.id))+" · "+roomA(r.id)+" aulas"}));
+  list.push({id:"recepcao", n:"Recepção", short:"Recepção", c:"var(--accent)", num:"★", sub:"Plantões prontos"});
+  const box = document.getElementById("spots");
+  box.innerHTML = list.map(r => { const [x1,y1,x2,y2,px,py] = SPOTS[r.id];
+    return `<button type="button" class="spot" data-room="${r.id}" style="--c:${r.c};left:${x1}%;top:${y1}%;width:${x2-x1}%;height:${y2-y1}%" aria-label="${esc(r.n)}, ${esc(r.sub)}"></button>
+      <button type="button" class="pin${SPONSORS[r.id]?" has-spo":""}" data-room="${r.id}" style="--c:${r.c};left:${px}%;top:${py}%" tabindex="-1" aria-hidden="true"><span class="n"></span><span class="tx"><b class="full">${esc(r.n)}${SPONSORS[r.id]?`<span class="spn"> ${esc(SPONSORS[r.id].nome)}</span>`:""}</b><b class="short">${esc(r.short)}</b><small>${esc(r.sub)}</small></span>${SELOS[r.id]?`<span class="selo ${SELOS[r.id][0]}">${SELOS[r.id][1]}</span>`:""}${SPONSORS[r.id]?`<span class="spo ${SPONSORS[r.id].lado||"direita"}"><i>Patrocínio</i><img src="${SPONSORS[r.id].logo}" alt="${esc(SPONSORS[r.id].nome)}"></span>`:""}</button>`; }).join("");
+  const go = id => id==="recepcao" ? document.getElementById("plantoes").scrollIntoView({behavior:"smooth"}) : openRoom(id);
+  box.querySelectorAll("[data-room]").forEach(el => {
+    el.addEventListener("click", () => go(el.dataset.room));
+    el.addEventListener("mouseenter", () => hl(box, el.dataset.room, true));
+    el.addEventListener("mouseleave", () => hl(box, el.dataset.room, false));
+  });
+  document.getElementById("roomsList").innerHTML = ROOMS.map((r,i)=>`<button class="room-card" type="button" style="--c:${r.c}" data-room="${r.id}"><span class="n"></span><span><b>${esc(r.n)}</b><span>${DATA[r.id].length} módulos · ${hrs(roomH(r.id))}</span>${PROVA[r.id]?`<span class="pv">👥 ${fmtN(PROVA[r.id])} alunos já estudaram</span>`:""}</span></button>`).join("");
+  document.querySelectorAll(".room-card").forEach(b => {
+    b.addEventListener("click", () => openRoom(b.dataset.room));
+    b.addEventListener("mouseenter", () => hl(box, b.dataset.room, true));
+    b.addEventListener("mouseleave", () => hl(box, b.dataset.room, false));
+  });
+}
+
+/* ---------- gaveta do setor ---------- */
+let currentRoom = null;
+function courseCard(c, here){
+  const inCart = has("c",c.id), s = c.s;
+  let meta = [];
+  if (c.mods.length) meta.push(c.mods.length+" módulo"+(c.mods.length>1?"s":"")+" · "+hrs(s));
+  if (c.presencial) meta.push("Presencial, com teoria online");
+  if (c.evento) meta.push("Evento: "+c.evento);
+  if (c.assinatura) meta.push("Assinatura mensal de conteúdos");
+  if (c.price && s) meta.push(brl0(c.price/ha(s))+" por h/a");
+  const tag = here ? "" : `<span class="tagx warm">${esc(ROOM[c.room].n)}</span>`;
+  const btn = c.price ? `<button class="btn sm ${inCart?"in":""}" data-add="c:${c.id}" ${inCart?"disabled":""}>${inCart?"No carrinho":"Levar curso · "+brl(c.price)}</button>` : `<a class="btn sm ghost" href="${c.url}" target="_blank" rel="noopener">Ver página ↗</a>`;
+  return `<div class="course"><div><b>${esc(c.n)}</b><span class="tagx">${esc(c.lvl)}</span>${tag}</div>
+    <div class="acts">${btn}${c.price?`<a class="sm" href="${c.url}" target="_blank" rel="noopener">Página de vendas ↗</a>`:""}</div>
+    <div class="meta">${meta.join(" · ")}</div></div>`;
+}
+function modRow(m){
+  const cov = courseCovering(m.id), inM = has("m",m.id), pm = priceModule(m.s);
+  const mBtn = cov ? `<button class="btn sm" disabled>No ${esc(cov.n)}</button>` : `<button class="btn sm ${inM?"in":""}" data-add="m:${m.id}" ${inM?"disabled":""}>${inM?"No carrinho":(m.kind?"+ Simpósio":"+ Módulo")}</button>`;
+  const les = m.aulas.map(l => {
+    const inA = has("a",l.id), blocked = cov || inM;
+    const tk = l.talks && l.talks.length ? `<ul class="talks">${l.talks.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>` : "";
+    return `<div class="les"><span class="play" aria-hidden="true">▶</span><span>${esc(l.n)}${tk}</span><span class="d num">${mins(l.s)} · ${ha(l.s).toFixed(2).replace(".",",")} h/a</span>
+      <span style="display:flex;gap:8px;align-items:center"><span class="p num">${brl(priceLesson(l.s))}</span>${blocked?`<button class="btn sm" disabled>Incluída</button>`:`<button class="btn sm ${inA?"in":"ghost"}" data-add="a:${l.id}" ${inA?"disabled":""}>${inA?"✓":(m.kind==="blocos"?"+ Adicionar":"+ Aula")}</button>`}</span></div>`;
+  }).join("");
+  return `<div class="mod" data-mod="${m.id}"><div class="mod-row">
+    <button class="tg" type="button" data-toggle="${m.id}" aria-label="Ver aulas de ${esc(m.n)}">›</button>
+    <div><b>${esc(m.n)}</b><span class="meta">${m.prof?esc(m.prof)+" · ":""}${m.kind==="blocos"?m.aulas.length+" gravações · "+m.aulas.reduce((a,l)=>a+(l.talks||[]).length,0)+" palestras":m.aulas.length+" aulas"} · ${hrs(m.s)}</span></div>
+    <div class="right"><span class="p num">${brl(pm)}</span>${mBtn}</div></div>
+    <div class="lessons">${les}</div></div>`;
+}
+function renderRoom(){
+  const r = ROOM[currentRoom], mods = DATA[r.id], idx = ROOMS.indexOf(r)+1;
+  const open = [...document.querySelectorAll("#rdBody .mod.open")].map(e=>e.dataset.mod);
+  document.getElementById("rdEyebrow").textContent = "Hospital Intensivet";
+  document.getElementById("rdProva").innerHTML = PROVA[r.id] ? `👥 ${fmtN(PROVA[r.id])} alunos já estudaram nesta sala` : "";
+  document.getElementById("rdProva").hidden = !PROVA[r.id];
+  const sp = SPONSORS[r.id], spEl = document.getElementById("rdSponsor");
+  document.getElementById("rdTitle").textContent = sp ? r.n + " " + sp.nome : r.n;
+  spEl.hidden = !sp;
+  spEl.innerHTML = sp ? `<i>Patrocínio</i><img src="${sp.logo}" alt="${esc(sp.nome)}">` : "";
+  document.getElementById("rdDesc").textContent = r.d;
+  document.getElementById("rdStats").innerHTML = `<span><b class="num">${mods.length}</b> módulos</span><span><b class="num">${roomA(r.id)}</b> aulas</span><span><b class="num">${hrs(roomH(r.id))}</b></span>`;
+  const here = COURSES.filter(c=>c.room===r.id);
+  const ids = mods.map(m=>m.id);
+  const elsewhere = COURSES.filter(c=>c.room!==r.id && c.mods.some(id=>ids.includes(id)));
+  let h = `<h4>Cursos completos</h4>`;
+  h += here.length ? here.map(c=>courseCard(c,true)).join("") : `<p class="note">Este setor ainda não tem curso próprio na vitrine. Os módulos abaixo estão dentro dos cursos listados a seguir, ou podem ser comprados avulsos.</p>`;
+  if (elsewhere.length) h += `<h4>Também estão em</h4>` + elsewhere.map(c=>courseCard(c,false)).join("");
+  h += r.id==="auditorio"
+    ? `<h4>Simpósio inteiro, por tema ou por aula</h4><p class="note">O VI e o VII foram gravados ao vivo em gravações longas, com várias palestras em cada uma. Por isso são vendidos inteiros ou por tema. O VIII tem uma gravação por palestra e pode ser comprado aula a aula. A Vet Summit Collection, com os três, sai mais barata.</p>` + mods.map(modRow).join("")
+    : `<h4>Monte por módulo ou por aula</h4>` + mods.map(modRow).join("");
+  renderRoomCart();
+  const body = document.getElementById("rdBody"); body.innerHTML = h;
+  open.forEach(id => { const e = body.querySelector(`.mod[data-mod="${id}"]`); if (e) e.classList.add("open"); });
+}
+function openRoom(id){ currentRoom = id; renderRoom(); document.getElementById("rdBody").scrollTop = 0; show("roomDrawer"); }
+
+/* ---------- carrinho ---------- */
+function lessonsOf(x){ if (x.k==="b") return 0; if (x.k==="a") return 1; if (x.k==="m") return MOD[x.id].aulas.length; return COURSES.find(c=>c.id===x.id).mods.reduce((a,id)=>a+(MOD[id]?MOD[id].aulas.length:0),0); }
+let lastCartKey = "";
+function renderRoomCart(){
+  const el = document.getElementById("rdCart"), t = totals();
+  const aulas = cart.reduce((a,x)=>a+lessonsOf(x),0);
+  el.classList.toggle("full", cart.length>0);
+  el.innerHTML = cart.length
+    ? `<span class="ic num">${cart.length}</span><span class="tx"><b>Seu plantão: ${aulas} aula${aulas>1?"s":""} · ${hrs(t.s)}</b>${cart.length} ite${cart.length>1?"ns":"m"} no carrinho${t.disc?" · desconto de "+(t.rate*100)+"%":""}</span><span class="tot num">${brl(t.total)}</span><button class="btn sm" type="button" id="rdGoCart">Ver carrinho</button>`
+    : `<span class="ic">0</span><span class="tx"><b>Seu plantão está vazio</b>Adicione cursos, módulos ou aulas deste setor.</span>`;
+  const key = cart.map(x=>x.k+x.id).join(",");
+  if (key !== lastCartKey && lastCartKey !== ""){ el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump"); }
+  lastCartKey = key || " ";
+}
+let cartFrom = null;  // setor de onde o carrinho foi aberto
+const backLabel = () => cartFrom ? "← Continuar comprando em " + ROOM[cartFrom].n : "← Continuar comprando";
+function openCart(from){ cartFrom = from || null; renderCart(); show("cartDrawer"); }
+function renderCart(){
+  const t = totals(), body = document.getElementById("cdBody");
+  document.getElementById("cartCount").textContent = cart.length;
+  document.getElementById("cartTop").textContent = brl0(t.total);
+  if (!cart.length){ body.innerHTML = `<div class="empty">Seu plantão está vazio.<br>Clique em um setor do mapa para começar.</div><button class="btn ghost" style="width:100%;margin-top:12px;padding:12px" id="keepShopping" type="button">${backLabel()}</button>`; return; }
+  const order = {b:3,c:0,m:1,a:2};
+  const items = [...cart].sort((a,b)=>order[a.k]-order[b.k]).map(x => { const i = itemInfo(x);
+    return `<div class="ci"><span class="k ${x.k}">${x.k==="b"?"Billy":x.k==="c"?"Curso":x.k==="m"?(MOD[x.id].kind?"Simpósio":"Módulo"):(MOD[LES[x.id].mod].kind==="blocos"?"Palestras":"Aula")}</span><div><b>${esc(i.n)}</b><span>${esc(i.sub)}</span></div><span class="num" style="font-weight:700">${brl(i.p)}</span><button class="rm" type="button" data-rm="${x.k}:${x.id}" aria-label="Remover ${esc(i.n)}">×</button></div>`; }).join("");
+  const sug = suggestions().map(({c,v}) => `<div class="hint"><span>Você já tem ${brl(v)} em peças do <b>${esc(c.n)}</b>. O curso completo sai ${brl(c.price)} com ${hrs(c.s)}.</span><button class="btn sm" data-add="c:${c.id}">Trocar</button></div>`).join("");
+  const next = ha(t.looseS) < 12 ? `Faltam ${hrs(12*HA-t.looseS)} em avulsos para 10% de desconto.` : ha(t.looseS) < 30 ? `Faltam ${hrs(30*HA-t.looseS)} em avulsos para 20% de desconto.` : "Desconto máximo nos avulsos aplicado.";
+  body.innerHTML = `<div class="cart-items">${items}</div>${sug}
+    <div class="sum num">
+      <div><span>Horas-aula (50 min)</span><b>${hrs(t.s)}</b></div>
+      ${t.full?`<div><span>Cursos completos${has("b",BILLY.id)?" e Billy":""}</span><span>${brl(t.full)}</span></div>`:""}
+      ${t.loose?`<div><span>Módulos e aulas avulsas</span><span>${brl(t.loose)}</span></div>`:""}
+      ${t.disc?`<div style="color:var(--accent)"><span>Desconto por volume (${t.rate*100}%)</span><span>− ${brl(t.disc)}</span></div>`:""}
+      <div class="tot"><span>Total</span><span>${brl(t.total)}</span></div>
+      <div style="color:var(--muted);font-size:13px"><span>${t.loose?next:"Preço por hora-aula: "+brl(t.total/(ha(t.s)||1))}</span></div>
+    </div>
+    <button class="btn" style="width:100%;margin-top:16px;padding:13px" id="checkout" type="button">Ir para o pagamento</button>
+    <button class="btn ghost" style="width:100%;margin-top:10px;padding:12px" id="keepShopping" type="button">${backLabel()}</button>
+    <p class="note" style="margin-top:12px">Protótipo: o pagamento ainda não existe. Na versão real este botão levaria ao checkout com os itens escolhidos.</p>
+    <button class="linkish" id="clear" type="button">Esvaziar carrinho</button>`;
+}
+/* ---------- busca ---------- */
+const norm = s => " " + String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g," ").trim() + " ";
+const STOP = new Set("de da do das dos e o a os as em no na nos nas para pra com por um uma uns umas sobre que como ao aos se meu minha".split(" "));
+const stem = w => w.length > 5 ? w.slice(0, w.length-2) : w;
+/* temas parecidos: quem busca uma palavra também acha as relacionadas */
+const SYN = {
+  "noradrenalina":["vasopressor","vasoativ","choque","hipotens","inotrop","noradrenalina"], "vasopressor":["noradrenalina","vasoativ","inotrop","choque"],
+  "dispneia":["respirat","oxigen","ventila","pneumo","asma","bronquite","traque","toracocentese","falego","pleural"], "falta de ar":["dispneia","respirat","oxigen","falego"],
+  "respira":["dispneia","respirat","oxigen","ventila","pneumo"], "oxigen":["oxigena","ventila","dispneia"], "pulm":["pneumo","respirat","pleural","ventila"],
+  "parada":["rcp","reanima","recover","cardiopulmonar"], "parada cardiaca":["rcp","reanima","recover","cardiopulmonar","parada"], "pcr":["rcp","reanima","recover","cardiopulmonar"], "rcp":["reanima","recover","cardiopulmonar","parada"], "reanima":["rcp","recover","cardiopulmonar"],
+  "choque":["sepse","septic","hipovolem","hemorrag","vasopressor","noradrenalina","fluid"], "sepse":["septic","choque","infecc","antibiot"],
+  "fluido":["fluid","cristaloid","coloid","volemi","encharcamento","creep"], "soro":["fluid","cristaloid"],
+  "gato":["felin","gato","gatil"], "felin":["gato","felin"], "cachorro":["canin","cao"], "cao":["canin"],
+  "sangue":["transfus","hemocomponent","hemato","coagula","plasma","sangu"], "transfus":["hemocomponent","sangue","plasma","transfus"],
+  "coagula":["hemosta","plaqueta","coagula","curative","sangra"], "sangramento":["hemorrag","hemosta","coagula"], "hemorrag":["sangra","hemosta","hemorrag"],
+  "rim":["renal","nefro","urina","obstru","dialise"], "renal":["nefro","rim","urina","dialise"], "nefro":["renal","rim"], "urina":["obstru","renal","urin"],
+  "diabet":["glicem","glicose","cetoacidose","insulina","diabet"], "glicose":["glicem","hipoglicem","diabet","insulina"],
+  "convuls":["epilep","convuls","crise","neuro"], "neuro":["neuro","convuls","epilep","coma"],
+  "dor":["analges","opioid","anestes","bloqueio","dor"], "anestes":["anestes","sedac","analges","intubac"],
+  "intuba":["intubac","endotraque","laring","traqueo","via aerea","vias aereas"], "via aerea":["vias aereas","intubac","traqueo","laring"],
+  "trauma":["trauma","fratura","hemorrag","ortoped","torac","xabc"], "fratura":["ortoped","trauma","fratura"],
+  "ultrass":["ultrass","ecograf","pocus","fast","eco"], "eco":["ecograf","ultrass","pocus"], "pocus":["ultrass","ecograf","fast"], "imagem":["radiograf","imagem","tomograf","ultrass"],
+  "gasometria":["gasometr","acido","ph","lactato","base"], "eletrolit":["eletrolit","sodio","potass","calcio","fosforo"],
+  "nutri":["nutric","sonda","aliment","enteral","parenteral"], "intoxica":["toxicolog","intoxic","venen","antidot"], "veneno":["toxicolog","intoxic"],
+  "cobra":["cobra","gest","preco","precific","financ"], "gestao":["gest","lider","equipe","financ"], "ferida":["ferida","curativo","queimad"],
+  "prognost":["prognost","morre","vive","marcador"], "paliat":["paliat","eutanas","final de vida","luto"], "eutanas":["paliat","eutanas","luto"],
+  "monitor":["monitoriz","capnograf","pressao","ecg","oximetr"], "pressao":["pressao","hipotens","hipertens","monitoriz"], "cardio":["cardio","coracao","arritm","ecg"]
+};
+let SEARCH_DOCS = null;
+function buildIndex(){
+  SEARCH_DOCS = [];
+  for (const r of ROOMS) for (const m of DATA[r.id]) {
+    SEARCH_DOCS.push({k:"m", id:m.id, room:r, title:m.n, t:norm(m.n), x:norm((m.prof||"")+" "+m.aulas.map(a=>a.n+" "+(a.talks||[]).join(" ")).join(" "))});
+    for (const a of m.aulas) SEARCH_DOCS.push({k:"a", id:a.id, room:r, mod:m, title:a.n, t:norm(a.n+" "+(a.talks||[]).join(" ")), x:norm(m.n+" "+r.n)});
+  }
+  for (const c of COURSES) SEARCH_DOCS.push({k:"c", id:c.id, room:ROOM[c.room], title:c.n, t:norm(c.n), x:norm(c.mods.map(id=>MOD[id]?MOD[id].n:"").join(" "))});
+}
+function queryTerms(q){
+  const nq = norm(q); let words = nq.trim().split(" ").filter(w => w && !STOP.has(w));
+  const groups = [];
+  // expressões ("falta de ar", "parada cardiaca") viram um tema só
+  for (const [key, list] of Object.entries(SYN)) { const nk = norm(key).trim();
+    if (nk.includes(" ") && nq.includes(" "+nk+" ")) { const kw = nk.split(" "); words = words.filter(w => !kw.includes(w)); groups.push(list.map(s => ({s:norm(s).trim(), w:1}))); } }
+  words = words.filter(w => w.length >= 3);
+  const base = groups.length;
+  words.forEach(w => groups.push([{s:stem(w), w:1}]));
+  // sinônimos por palavra e por expressão
+  for (const [key, list] of Object.entries(SYN)) {
+    const nk = norm(key).trim();
+    if (nk.includes(" ")) continue;
+    const wi = words.findIndex(w => w.startsWith(stem(nk)) || nk.startsWith(stem(w)));
+    if (wi < 0) continue;
+    const g = groups[base + wi];
+    list.forEach(s => g.push({s:norm(s).trim(), w:.6}));
+  }
+  return groups;
+}
+function scoreDoc(d, groups){
+  let sc = 0, all = true;
+  for (const g of groups) {
+    let best = 0;
+    for (const {s,w} of g) {
+      if (d.t.includes(" "+s)) best = Math.max(best, 3*w);
+      else if (d.x.includes(" "+s)) best = Math.max(best, (d.k==="a" ? .8 : 1.2)*w);
+    }
+    if (!best) all = false;
+    sc += best;
+  }
+  return all ? sc * 2 : sc * .5;
+}
+function hlText(text, groups){
+  let out = esc(text);
+  const stems = groups.flat().map(x=>x.s).filter(s=>s.length>=3 && !s.includes(" "));
+  if (!stems.length) return out;
+  const plain = text.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
+  const marks = [];
+  stems.forEach(s => { let i = -1; while ((i = plain.indexOf(s, i+1)) !== -1) { if (i===0 || /[^a-z0-9]/.test(plain[i-1])) { let e = i+s.length; while (e < plain.length && /[a-z0-9]/.test(plain[e])) e++; marks.push([i,e]); } } });
+  if (!marks.length) return out;
+  marks.sort((a,b)=>a[0]-b[0]); const merged = [];
+  marks.forEach(m => { const l = merged[merged.length-1]; if (l && m[0] <= l[1]) l[1] = Math.max(l[1], m[1]); else merged.push([...m]); });
+  let res = "", p = 0; merged.forEach(([a,b]) => { res += esc(text.slice(p,a)) + "<mark>" + esc(text.slice(a,b)) + "</mark>"; p = b; });
+  return res + esc(text.slice(p));
+}
+let lastQ = "", showAll = false, lastLessons = [];
+function lessonState(l){
+  const cov = courseCovering(l.mod), inM = has("m", l.mod), inA = has("a", l.id);
+  return cov ? {lbl:"No "+cov.n, dis:true, cls:""} : inM ? {lbl:"No módulo", dis:true, cls:""} : inA ? {lbl:"✓ No carrinho", dis:true, cls:"in"} : {lbl:"+ Carrinho", dis:false, cls:""};
+}
+function renderSearch(){
+  const box = document.getElementById("results"), q = document.getElementById("q").value.trim();
+  document.getElementById("sbox").classList.toggle("has", !!q);
+  if (q.length < 2) { box.innerHTML = ""; lastLessons = []; return; }
+  if (!SEARCH_DOCS) buildIndex();
+  if (q !== lastQ) { showAll = false; lastQ = q; }
+  const groups = queryTerms(q);
+  const scored = SEARCH_DOCS.map(d => ({d, s:scoreDoc(d, groups)})).filter(x => x.s >= 1.2).sort((a,b) => b.s - a.s);
+  const lessons = scored.filter(x => x.d.k==="a"), others = scored.filter(x => x.d.k!=="a").slice(0, 5);
+  lastLessons = lessons.map(x => LES[x.d.id]);
+  if (!scored.length) { box.innerHTML = `<p class="r-none">Nada encontrado para “${esc(q)}”. Tente outra palavra, como o nome de uma doença, droga ou procedimento.</p>`; return; }
+  const free = lastLessons.filter(l => !lessonState(l).dis);
+  const freeP = free.reduce((a,l)=>a+priceLesson(l.s),0), freeS = free.reduce((a,l)=>a+l.s,0);
+  const shown = showAll ? lessons : lessons.slice(0, 8);
+  const row = x => { const d = x.d;
+    if (d.k === "a") { const l = LES[d.id], st = lessonState(l), bl = d.mod.kind==="blocos";
+      return `<div class="rrow" style="--c:${d.room.c}"><span class="k">${bl?"Palestras":"Aula"}</span><div><b>${hlText(d.title, groups)}</b><span class="ctx"><i>${esc(d.room.n)}</i> · ${esc(d.mod.n)}${l.talks?" · "+hlText(l.talks.join("; "), groups):""}</span></div>
+        <span class="p num">${brl(priceLesson(l.s))}<small>${mins(l.s)} · ${ha(l.s).toFixed(2).replace(".",",")} h/a</small></span><button class="btn sm ${st.cls}" data-add="a:${l.id}" ${st.dis?"disabled":""}>${st.lbl}</button></div>`; }
+    if (d.k === "m") { const m = MOD[d.id], cov = courseCovering(m.id), inM = has("m", m.id);
+      return `<div class="rrow" style="--c:${d.room.c}"><span class="k m">${m.kind?"Simpósio":"Módulo"}</span><div><b>${hlText(d.title, groups)}</b><span class="ctx"><i>${esc(d.room.n)}</i> · ${m.aulas.length} ${m.kind==="blocos"?"gravações":"aulas"}</span></div>
+        <span class="p num">${brl(priceModule(m.s))}<small>${hrs(m.s)}</small></span><button class="btn sm ${inM?"in":""}" data-add="m:${m.id}" ${cov||inM?"disabled":""}>${cov?"No curso":inM?"✓ No carrinho":"+ Carrinho"}</button></div>`; }
+    const c = COURSES.find(c => c.id === d.id), inC = has("c", c.id);
+    return `<div class="rrow" style="--c:${d.room.c}"><span class="k c">Curso</span><div><b>${hlText(d.title, groups)}</b><span class="ctx"><i>${esc(d.room.n)}</i> · curso completo${c.s?" · "+c.mods.length+" módulos":""}</span></div>
+      <span class="p num">${c.price?brl(c.price):"—"}<small>${c.s?hrs(c.s):""}</small></span>${c.price?`<button class="btn sm ${inC?"in":""}" data-add="c:${c.id}" ${inC?"disabled":""}>${inC?"✓ No carrinho":"+ Carrinho"}</button>`:`<a class="btn sm ghost" href="${c.url}" target="_blank" rel="noopener">Ver ↗</a>`}</div>`;
+  };
+  box.innerHTML = `<div class="r-head"><span><b>${lessons.length}</b> aula${lessons.length===1?"":"s"} sobre “${esc(q)}”${others.length?" e "+others.length+" módulo"+(others.length>1?"s":"")+" ou curso"+(others.length>1?"s":""):""}</span>
+      ${free.length>1?`<button class="btn sm" type="button" id="addAll">Adicionar as ${free.length} aulas · ${brl(freeP)} · ${hrs(freeS)}</button>`:""}</div>
+    ${lessons.length?`<div class="r-sub">Aulas</div>`+shown.map(row).join(""):""}
+    ${lessons.length>8&&!showAll?`<button class="linkish r-more" type="button" id="moreRes">Mostrar todas as ${lessons.length} aulas</button>`:""}
+    ${others.length?`<div class="r-sub">Módulos e cursos relacionados</div>`+others.map(row).join(""):""}`;
+}
+let st;
+document.getElementById("q").addEventListener("input", () => { clearTimeout(st); st = setTimeout(renderSearch, 120); });
+document.getElementById("qClear").addEventListener("click", () => { const i = document.getElementById("q"); i.value = ""; renderSearch(); i.focus(); });
+document.querySelectorAll(".schips [data-q]").forEach(b => b.addEventListener("click", () => { document.getElementById("q").value = b.dataset.q; renderSearch(); }));
+document.getElementById("results").addEventListener("click", e => {
+  if (e.target.id === "moreRes") { showAll = true; renderSearch(); }
+  if (e.target.id === "addAll") { const free = lastLessons.filter(l => !lessonState(l).dis);
+    free.forEach(l => { if (!has("a", l.id)) cart.push({k:"a", id:l.id}); }); save(); refresh(); toast(free.length+" aulas adicionadas ao carrinho"); }
+});
+
+function refresh(){ renderSearch(); renderCart(); if (currentRoom && document.getElementById("roomDrawer").classList.contains("on")) renderRoom(); renderMissions(); }
+
+/* ---------- plantões e preços ---------- */
+function renderMissions(){
+  document.getElementById("missions").innerHTML = MISSIONS.map((m,i) => {
+    const cs = m.c.map(id=>COURSES.find(c=>c.id===id)), p = cs.reduce((a,c)=>a+c.price,0), s = cs.reduce((a,c)=>a+c.s,0);
+    const all = cs.every(c=>has("c",c.id));
+    return `<div class="mission"><span class="lvl">${esc(m.lvl)}</span><h3>${esc(m.n)}</h3><p>${esc(m.d)}</p>
+      <ul>${cs.map(c=>`<li>${esc(c.n)}<span class="num">${hrs(c.s)}</span></li>`).join("")}</ul>
+      <div class="foot"><div class="price num">${brl(p)}<small>${hrs(s)}</small></div><button class="btn sm ${all?"in":""}" data-mission="${i}" ${all?"disabled":""}>${all?"No carrinho":"Colocar no carrinho"}</button></div></div>`;
+  }).join("");
+}
+function renderPrices(){
+  const rows = COURSES.filter(c=>c.price && c.s).map(c=>({c, ph:c.price/ha(c.s)})).sort((a,b)=>a.ph-b.ph);
+  const max = Math.max(...rows.map(r=>r.ph));
+  document.getElementById("pph").innerHTML = rows.map(({c,ph}) => `<tr><td>${esc(c.n)}</td><td class="r num">${brl0(c.price)}</td><td class="r num">${hrs(c.s)}</td><td class="r num">${brl0(ph)}</td><td><div class="bar" style="width:${Math.max(4,ph/max*100)}%"></div></td></tr>`).join("");
+}
+function renderNames(){
+  const cur = document.querySelector(".brand b").textContent;
+  document.getElementById("names").innerHTML = NAMES.map(n => `<button class="chip ${n.toUpperCase()===cur?"on":""}" type="button" data-name="${esc(n)}">${esc(n)}</button>`).join("");
+}
+
+/* ---------- interface ---------- */
+function show(id){ document.querySelectorAll(".drawer").forEach(d=>{ d.classList.toggle("on", d.id===id); d.setAttribute("aria-hidden", d.id!==id); }); document.getElementById("scrim").classList.add("on"); const x = document.querySelector("#"+id+" .x"); if (x) x.focus(); }
+function hide(){ document.querySelectorAll(".drawer").forEach(d=>{ d.classList.remove("on"); d.setAttribute("aria-hidden","true"); }); document.getElementById("scrim").classList.remove("on"); }
+let tt; function toast(t){ const e = document.getElementById("toast"); e.textContent = t; e.classList.add("on"); clearTimeout(tt); tt = setTimeout(()=>e.classList.remove("on"), 1800); }
+
+document.addEventListener("click", e => {
+  const a = e.target.closest("[data-add]"); if (a && !a.disabled){ const [k,id] = a.dataset.add.split(":"); add(k, k==="c"||k==="b"?id:+id); return; }
+  const r = e.target.closest("[data-rm]"); if (r){ const [k,id] = r.dataset.rm.split(":"); remove(k, k==="c"||k==="b"?id:+id); return; }
+  const t = e.target.closest("[data-toggle]"); if (t){ t.closest(".mod").classList.toggle("open"); return; }
+  const m = e.target.closest("[data-mission]"); if (m && !m.disabled){ MISSIONS[+m.dataset.mission].c.forEach(id=>add("c",id)); openCart(null); return; }
+  const n = e.target.closest("[data-name]"); if (n){ document.querySelector(".brand b").textContent = n.dataset.name.toUpperCase(); document.title = n.dataset.name; renderNames(); return; }
+  if (e.target.closest("[data-close]") || e.target.id==="scrim"){ hide(); return; }
+  if (e.target.id==="rdGoCart"){ openCart(currentRoom); return; }
+  if (e.target.id==="keepShopping"){ if (cartFrom) openRoom(cartFrom); else hide(); return; }
+  if (e.target.id==="checkout"){ toast("Protótipo: aqui abriria o checkout"); return; }
+  if (e.target.id==="clear"){ cart = []; save(); refresh(); return; }
+});
+document.getElementById("openCart").addEventListener("click", ()=>openCart(document.getElementById("roomDrawer").classList.contains("on") ? currentRoom : null));
+document.addEventListener("keydown", e => { if (e.key==="Escape") hide(); });
+document.getElementById("zoom").addEventListener("click", e => { const z = document.querySelector(".map-card").classList.toggle("zoomed"); e.currentTarget.setAttribute("aria-pressed", z); e.currentTarget.textContent = z ? "⤡ Ver mapa inteiro" : "⤢ Ampliar mapa"; });
+document.getElementById("pause").addEventListener("click", e => { const p = document.querySelector(".map-card").classList.toggle("paused"); e.target.textContent = p ? "Retomar movimento" : "Pausar movimento"; });
+
+const allS = Object.values(MOD).reduce((a,m)=>a+m.s,0), allA = Object.values(LES).length;
+document.getElementById("stH").textContent = Math.round(ha(allS));
+document.getElementById("stA").textContent = allA;
+
+/* ---------- sons das salas (gerados no navegador, sem arquivos) ---------- */
+const SND = (() => {
+  let ac = null, master = null, on = true, cur = null, curId = "", until = 0, hover = "", loopT = 0, stopT = 0;
+  const now = () => ac.currentTime;
+  /* gravações reais (Wikimedia Commons): miado CC0, latido CC BY-SA 3.0 */
+  const REC = {gato:"data:audio/mpeg;base64,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qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tSxOoCByBdG0EYZeGXK15I8Ypoqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqr/+1LEoYPAAAGkAAAAIAAANIAAAASqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqg==", cachorro:"data:audio/mpeg;base64,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"}, BUF = {};
+  function loadRec(){ Object.entries(REC).forEach(([k,u]) => fetch(u).then(r=>r.arrayBuffer()).then(a=>ac.decodeAudioData(a)).then(b=>{ BUF[k]=b; }).catch(()=>{})); }
+  function rec(out, k, vol){ const b = BUF[k]; if (!b) return .4; const s = ac.createBufferSource(), g = ac.createGain(); s.buffer = b; g.gain.value = vol; s.connect(g).connect(out); s.start(); return b.duration; }
+  function init(){ if (ac) return; ac = new (window.AudioContext||window.webkitAudioContext)(); loadRec(); master = ac.createGain(); master.gain.value = 0.22; master.connect(ac.destination); }
+  function bus(){ const g = ac.createGain(); g.gain.value = 1; g.connect(master); return g; }
+  function noiseBuf(sec){ const b = ac.createBuffer(1, ac.sampleRate*sec, ac.sampleRate), d = b.getChannelData(0); for (let i=0;i<d.length;i++) d[i] = Math.random()*2-1; return b; }
+  function tone(out, f, t0, dur, type="sine", vol=.5, a=.005, r=.04){
+    const o = ac.createOscillator(), g = ac.createGain(); o.type = type; o.frequency.value = f;
+    g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(vol, t0+a); g.gain.setValueAtTime(vol, t0+Math.max(a, dur-r)); g.gain.linearRampToValueAtTime(0, t0+dur);
+    o.connect(g).connect(out); o.start(t0); o.stop(t0+dur+.02); return o;
+  }
+  function shaper(k){ const ws = ac.createWaveShaper(), c = new Float32Array(1024); for (let i=0;i<1024;i++){ const x = i/512-1; c[i] = Math.tanh(k*x)/Math.tanh(k); } ws.curve = c; return ws; }
+  function vib(param, t0, dur, rate, depth){ const l = ac.createOscillator(), g = ac.createGain(); l.frequency.value = rate; g.gain.value = depth; l.connect(g).connect(param); l.start(t0); l.stop(t0+dur); }
+  function noise(out, t0, dur, {type="bandpass", f=1000, q=1, vol=.4, a=.01, r=.05}={}){
+    const s = ac.createBufferSource(), fl = ac.createBiquadFilter(), g = ac.createGain();
+    s.buffer = noiseBuf(dur+.05); fl.type = type; fl.frequency.value = f; fl.Q.value = q;
+    g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(vol, t0+a); g.gain.setValueAtTime(vol, t0+Math.max(a, dur-r)); g.gain.linearRampToValueAtTime(0, t0+dur);
+    s.connect(fl).connect(g).connect(out); s.start(t0); s.stop(t0+dur+.05); return {s, fl, g};
+  }
+  const S = {
+    /* ambulância chegando: sirene "wail" que se aproxima (fica mais alta, mais aberta e um pouco mais aguda) */
+    aph(out){ const t0 = now(), d = 3.6, mix = ac.createGain(), fl = ac.createBiquadFilter(), g = ac.createGain(), dl = ac.createDelay(), fb = ac.createGain();
+      const o1 = ac.createOscillator(), o2 = ac.createOscillator(), g2 = ac.createGain();
+      o1.type = "triangle"; o2.type = "sine"; g2.gain.value = .35;
+      const sweep = tt => { o1.frequency.setValueAtTime(640, tt); o1.frequency.linearRampToValueAtTime(1280, tt+.9); o1.frequency.linearRampToValueAtTime(640, tt+1.8); };
+      for (let k=0; k<2; k++) sweep(t0 + k*1.8);
+      o1.connect(mix); o2.connect(g2).connect(mix);
+      /* oitava acima seguindo o mesmo desenho */
+      for (let k=0; k<2; k++){ const tt = t0+k*1.8; o2.frequency.setValueAtTime(1280, tt); o2.frequency.linearRampToValueAtTime(2560, tt+.9); o2.frequency.linearRampToValueAtTime(1280, tt+1.8); }
+      fl.type = "lowpass"; fl.frequency.setValueAtTime(700, t0); fl.frequency.exponentialRampToValueAtTime(4000, t0+d*.85);
+      g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(.05, t0+.25); g.gain.exponentialRampToValueAtTime(.42, t0+d*.85); g.gain.linearRampToValueAtTime(0, t0+d);
+      dl.delayTime.value = .11; fb.gain.value = .28; mix.connect(fl); fl.connect(g); g.connect(out); g.connect(dl); dl.connect(fb).connect(dl); fb.connect(out);
+      o1.start(t0); o2.start(t0); o1.stop(t0+d); o2.stop(t0+d);
+      noise(out, t0, d, {type:"lowpass", f:180, q:.7, vol:.25, a:1.5, r:.4}); return d; },
+    /* emergência: monitor rápido + alarme de prioridade alta */
+    emergencia(out){ const t0 = now(); for (let i=0;i<5;i++) tone(out, 1046, t0+i*.36, .07, "sine", .35);
+      [0,.18,.36].forEach(x => tone(out, 1318, t0+1.95+x, .12, "square", .12)); [0,.18].forEach(x => tone(out, 1318, t0+2.65+x, .12, "square", .12)); return 3.1; },
+    /* internação: um monitor cardíaco em ritmo calmo, com o ambiente do quarto ao fundo */
+    uti(out){ const t0 = now(), d = 3.4;
+      noise(out, t0, d, {type:"lowpass", f:400, q:.5, vol:.05, a:.3, r:.4});
+      for (let i=0;i<5;i++){ const tt = t0+.15+i*.72; tone(out, 940, tt, .11, "sine", .3, .004, .08); tone(out, 1880, tt, .06, "sine", .05, .004, .05); }
+      return d; },
+    /* centro cirúrgico: oxímetro + respirador */
+    cirurgia(out){ const t0 = now(); [988,988,975,975,962,962].forEach((f,i) => tone(out, f, t0+i*.5, .09, "sine", .32));
+      [0, 1.6].forEach(x => { const n = noise(out, t0+x, 1.3, {type:"lowpass", f:600, vol:.0, a:.01, r:.01}); n.g.gain.cancelScheduledValues(t0+x); n.g.gain.setValueAtTime(0, t0+x); n.g.gain.linearRampToValueAtTime(.35, t0+x+.6); n.g.gain.linearRampToValueAtTime(0, t0+x+1.3); }); return 3.1; },
+    /* laboratório e imagem: ressonância magnética (batidas do gradiente e o "bip-bip" rápido da sequência) */
+    lab(out){ const t0 = now(), body = ac.createBiquadFilter(), room = ac.createBiquadFilter(), g = ac.createGain();
+      body.type = "bandpass"; body.frequency.value = 700; body.Q.value = .9; room.type = "lowpass"; room.frequency.value = 2400; g.gain.value = .55;
+      body.connect(room).connect(g).connect(out);
+      const knock = (t, f, len, vol) => { const o = ac.createOscillator(), e = ac.createGain(); o.type = "square"; o.frequency.value = f;
+        e.gain.setValueAtTime(0, t); e.gain.linearRampToValueAtTime(vol, t+.004); e.gain.setValueAtTime(vol, t+len-.01); e.gain.linearRampToValueAtTime(0, t+len);
+        o.connect(e).connect(body); o.start(t); o.stop(t+len+.01); };
+      let x = t0 + .05;
+      /* 1) batidas graves e ritmadas: "toc-toc-toc" */
+      for (let i=0;i<8;i++){ knock(x, 190, .05, .5); x += .19; }
+      x += .12;
+      /* 2) zumbido em rajadas: "bzzz-bzzz-bzzz" */
+      for (let i=0;i<6;i++){ knock(x, 1020, .11, .32); x += .2; }
+      x += .1;
+      /* 3) metralhada rápida da sequência */
+      for (let i=0;i<14;i++){ knock(x, 640, .03, .42); x += .07; }
+      noise(out, t0, x - t0 + .1, {type:"lowpass", f:220, q:.5, vol:.05, a:.2, r:.2}); /* ventilação da sala */
+      return x - t0 + .15; },
+    /* gatil: miado de gato de verdade */
+    gatil(out){ return rec(out, "gato", 1.1); },
+    /* recepção: conversa ao fundo */
+    recepcao(out){ const t0 = now(), d = 3;
+      for (let v=0; v<5; v++){ const n = noise(out, t0, d, {type:"bandpass", f:350+v*170, q:4, vol:0, a:.01, r:.01}); const g = n.g.gain; g.cancelScheduledValues(t0); g.setValueAtTime(0, t0);
+        let x = t0 + Math.random()*.3; while (x < t0+d-.25){ const len = .12+Math.random()*.22; g.linearRampToValueAtTime(.14+Math.random()*.16, x+.04); g.linearRampToValueAtTime(.03, x+len); x += len + Math.random()*.12; } g.linearRampToValueAtTime(0, t0+d); }
+      tone(out, 1568, t0+.2, .5, "sine", .08, .005, .45); return d; },
+    /* diretoria: teclado digitando e telefone tocando baixinho */
+    diretoria(out){ const t0 = now(); let x = t0;
+      for (let i=0;i<14;i++){ noise(out, x, .03, {type:"highpass", f:2500, vol:.25, a:.002, r:.02}); x += .07 + Math.random()*.12; }
+      [0,.06,.12,.18,.24,.30,.36,.42].forEach(y => { tone(out, 1200, x+.3+y, .03, "sine", .1); tone(out, 1500, x+.33+y, .03, "sine", .08); }); return (x-t0)+.9; },
+    /* auditório: troca de slide e aplausos */
+    auditorio(out){ const t0 = now(); noise(out, t0, .04, {type:"bandpass", f:1800, q:2, vol:.5, a:.001, r:.03}); noise(out, t0+.12, .05, {type:"bandpass", f:900, q:2, vol:.4, a:.001, r:.04});
+      for (let i=0;i<70;i++){ const x = t0+.5+Math.random()*2.2, edge = 1 - Math.abs((x-t0-1.6)/1.2); noise(out, x, .02, {type:"bandpass", f:1200+Math.random()*1800, q:1.5, vol:.12+.25*Math.max(0,edge), a:.001, r:.015}); } return 2.9; },
+    /* Billy: latido de verdade, curto */
+    billy(out){ return rec(out, "cachorro", .8); }
+  };
+  /* pausa entre uma repetição e outra, enquanto o mouse fica na sala */
+  const GAP = {billy:.9, gatil:.6, aph:0, recepcao:0, uti:0, cirurgia:0, emergencia:.4, lab:.3, diretoria:.5, auditorio:.6};
+  function fade(){ if (cur){ const old = cur; old.gain.setTargetAtTime(0, ac.currentTime, .06); setTimeout(()=>old.disconnect(), 500); cur = null; } curId = ""; clearTimeout(loopT); }
+  function play(id, again){
+    if (!on || !S[id]) return;
+    init(); if (ac.state !== "running"){ ac.resume(); return; }
+    if (!again && id === curId) return;
+    if (cur && !again) fade();
+    if (!cur) cur = bus();
+    curId = id; const d = S[id](cur); until = ac.currentTime + d;
+    clearTimeout(loopT); loopT = setTimeout(() => { if (hover === id && on) play(id, true); else if (curId === id) curId = ""; }, (d + (GAP[id]||0)) * 1000);
+  }
+  function enter(id){ clearTimeout(stopT); if (hover === id) return; hover = id; play(id); }
+  function leave(){ clearTimeout(stopT); stopT = setTimeout(() => { hover = ""; if (ac) fade(); }, 150); }
+  function wake(){ init(); if (ac.state === "suspended") ac.resume(); }
+  function toggle(){ init(); on = !on; wake(); if (!on){ hover = ""; fade(); } return on; }
+  return {play, enter, leave, wake, toggle, state: () => ({hover, curId, on, ctx: ac && ac.state})};
+})();
+document.getElementById("sound").addEventListener("click", e => { const on = SND.toggle(); e.currentTarget.setAttribute("aria-pressed", on); e.currentTarget.textContent = on ? "🔊 Sons ligados" : "🔈 Sons desligados"; });
+/* o navegador só libera o áudio depois do primeiro clique ou toque na página */
+["pointerdown","keydown","touchstart"].forEach(ev => document.addEventListener(ev, () => SND.wake(), {once:true, passive:true}));
+const spotsBox = document.getElementById("spots");
+spotsBox.addEventListener("mouseover", e => { const r = e.target.closest("[data-room]"); if (r) SND.enter(r.dataset.room); });
+spotsBox.addEventListener("mouseout", e => { const to = e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest("[data-room]"); const from = e.target.closest("[data-room]"); if (!to || !from || to.dataset.room !== from.dataset.room) SND.leave(); });
+const billyB = document.getElementById("billyBtn");
+billyB.addEventListener("mouseenter", () => SND.enter("billy"));
+billyB.addEventListener("mouseleave", () => SND.leave());
+
+/* ---------- vida no mapa ---------- */
+const fx = document.getElementById("fx");
+/* telão do auditório alternando */
+(() => { const s = [...document.querySelectorAll(".telao .sl")]; let i = 0;
+  setInterval(() => { if (document.querySelector(".map-card").classList.contains("paused")) return; s[i].classList.remove("on"); i = (i+1) % s.length; s[i].classList.add("on"); }, 4000); })();
+/* ---------- chamarizes: um de cada vez, com calma ----------
+   Regras: nunca dois balões ao mesmo tempo; Billy aparece uma vez (2 s após o mapa aparecer) e some sozinho em 15 s;
+   o 1º "paciente chegando" vem ~12 s depois que o Billy sai; depois, um a cada 35 s, cada um visível por 10 s;
+   no máximo 3 alertas por visita; nada aparece com painel, carrinho ou janela do Billy aberta, com a busca em uso,
+   logo após um clique (4 s), com o mapa fora da tela ou pausado. Passar o mouse pelo mapa não bloqueia.
+   Se o aluno clicar num alerta, os alertas param (ele já está focado). */
+const CHAMA = { atual: null, alertas: 0, max: 3, parou: false, ultimoUso: 0, fimBilly: 0 };
+const mapCard = document.querySelector(".map-card");
+let mapaVisivel = true;
+new IntersectionObserver(es => { mapaVisivel = es[0].isIntersecting && es[0].intersectionRatio > .25; }, {threshold:[0,.25,.5,1]}).observe(mapCard);
+["pointerdown","keydown"].forEach(ev => document.addEventListener(ev, e => { if (!e.target.closest || !e.target.closest(".alerta,.bfala")) CHAMA.ultimoUso = Date.now(); }));
+document.getElementById("q").addEventListener("input", () => { CHAMA.ultimaBusca = Date.now(); });
+function ocupado(){
+  return CHAMA.atual || !mapaVisivel || mapCard.classList.contains("paused") || document.querySelector(".drawer.on") ||
+    document.getElementById("billyPop").classList.contains("on") || Date.now() - (CHAMA.ultimaBusca||0) < 10000 ||
+    Date.now() - CHAMA.ultimoUso < 4000;
+}
+function mostrar(el, ms){
+  CHAMA.atual = el; fx.appendChild(el);
+  let t = setTimeout(fechar, ms);
+  el.addEventListener("mouseenter", () => clearTimeout(t));            /* parado em cima: não some */
+  el.addEventListener("mouseleave", () => { clearTimeout(t); t = setTimeout(fechar, 4000); });
+  function fechar(){ if (!el.isConnected) return; if (el.id === "bfala") CHAMA.fimBilly = Date.now(); el.style.transition = "opacity .4s"; el.style.opacity = 0; setTimeout(() => { el.remove(); if (CHAMA.atual === el) CHAMA.atual = null; }, 400); }
+  el.fechar = () => { clearTimeout(t); if (el.id === "bfala") CHAMA.fimBilly = Date.now(); el.remove(); if (CHAMA.atual === el) CHAMA.atual = null; };
+}
+/* Billy recepcionando: uma vez por visita, 15 s */
+function billyFala(){
+  if (CHAMA.atual || document.getElementById("bfala")) return;
+  const el = document.createElement("div"); el.className = "bfala"; el.id = "bfala"; el.style.left = "48%"; el.style.top = "73%";
+  el.innerHTML = `<button class="x" type="button" aria-label="Fechar">×</button>Oi! Eu sou o <b>Billy</b> 🐾<br>Me diz um tema que eu te levo até a sala certa.
+    <div class="acts"><button class="p" type="button" data-bf="trial">💬 Fazer 3 perguntas grátis</button><button class="s" type="button" data-bf="busca">🔎 Buscar um tema agora</button></div>`;
+  el.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return;
+    if (b.dataset.bf === "busca"){ document.getElementById("busca").scrollIntoView({behavior:"smooth", block:"center"}); setTimeout(()=>document.getElementById("q").focus({preventScroll:true}), 500); }
+    if (b.dataset.bf === "trial"){ document.getElementById("billyBtn").click(); setTimeout(()=>document.getElementById("btNome").focus(), 150); }
+    el.fechar(); });
+  mostrar(el, 15000);
+}
+/* paciente chegando */
+const CASOS = [
+  {room:"emergencia", x:21, y:43, txt:"Gato obstruído chegando na Emergência", q:"gato obstruído"},
+  {room:"uti", x:24, y:22, txt:"Cão em choque séptico na Internação", q:"sepse"},
+  {room:"aph", x:31, y:82, txt:"Atropelamento chegando de ambulância", q:"trauma"},
+  {room:"lab", x:68, y:14, txt:"Gasometria alterada no Laboratório", q:"gasometria"},
+  {room:"cirurgia", x:71, y:39, txt:"Anestesia de paciente grave no Centro Cirúrgico", q:"anestesia"},
+  {room:"gatil", x:50, y:14, txt:"Gato com dispneia no Gatil", q:"dispneia"}
+];
+let caso = Math.floor(Math.random()*CASOS.length);
+function pacienteChegando(forcar){
+  if (!forcar && (CHAMA.parou || CHAMA.alertas >= CHAMA.max || ocupado())) return false;
+  if (CHAMA.atual && CHAMA.atual.fechar) CHAMA.atual.fechar();
+  const c = CASOS[caso++ % CASOS.length], el = document.createElement("div");
+  const baixo = c.y < 30; el.className = "alerta" + (baixo ? " baixo" : ""); el.id = "alerta"; el.style.left = c.x+"%"; el.style.top = (baixo ? c.y+3.5 : c.y-2.5)+"%";
+  el.innerHTML = `<button class="x" type="button" aria-label="Fechar">×</button><span class="t"><i></i>Paciente chegando!</span><b>${c.txt}</b><button type="button" class="go">Ver aulas sobre isso →</button>`;
+  el.querySelector(".x").onclick = () => el.fechar();
+  el.querySelector(".go").onclick = () => { CHAMA.parou = true; const q = document.getElementById("q"); q.value = c.q; renderSearch(); document.getElementById("busca").scrollIntoView({behavior:"smooth", block:"start"}); el.fechar(); };
+  CHAMA.alertas++; mostrar(el, 10000); return true;
+}
+/* agenda: tenta de novo a cada 5 s quando chega a hora, até conseguir */
+function agendar(fn, ms){ setTimeout(function tenta(){ if (!fn()) setTimeout(tenta, 5000); }, ms); }
+agendar(() => { if (ocupado()) return false; billyFala(); return true; }, 2000);
+agendar(function primeiro(){ if (CHAMA.atual || !CHAMA.fimBilly || Date.now() - CHAMA.fimBilly < 12000) return false; const ok = pacienteChegando(); if (ok) proximo(); return ok || CHAMA.parou || CHAMA.alertas >= CHAMA.max; }, 20000);
+function proximo(){ if (CHAMA.parou || CHAMA.alertas >= CHAMA.max) return; agendar(() => { const ok = pacienteChegando(); if (ok) proximo(); return ok || CHAMA.parou || CHAMA.alertas >= CHAMA.max; }, 35000); }
+/* teste grátis do Billy (protótipo: não envia nada) */
+document.getElementById("btForm").addEventListener("submit", e => { e.preventDefault();
+  const nome = document.getElementById("btNome").value.trim().split(" ")[0] || "";
+  document.getElementById("btrial").innerHTML = `<h4>Prontinho${nome?", "+esc(nome):""}! 🐾</h4><p class="ok">O Billy vai chamar você no WhatsApp para as suas 3 perguntas grátis. Salve o contato dele para continuar estudando.<br><small style="opacity:.7">Protótipo: nenhum dado foi enviado.</small></p>`; });
+const billyPop = document.getElementById("billyPop");
+function billySync(){ const inB = has("b", BILLY.id), b = document.getElementById("billyAdd"); b.textContent = inB ? "✓ No carrinho" : "Colocar no carrinho"; b.disabled = inB; }
+document.getElementById("billyPrice").textContent = brl(BILLY.price);
+document.getElementById("billyBtn").addEventListener("click", () => { billySync(); billyPop.classList.add("on"); document.getElementById("billyClose").focus(); });
+document.getElementById("billyClose").addEventListener("click", () => billyPop.classList.remove("on"));
+billyPop.addEventListener("click", e => { if (e.target === billyPop) billyPop.classList.remove("on"); });
+document.addEventListener("keydown", e => { if (e.key==="Escape") billyPop.classList.remove("on"); });
+document.getElementById("billyAdd").addEventListener("click", () => { add("b", BILLY.id); billySync(); });
+document.getElementById("billyMore").addEventListener("click", e => { e.preventDefault(); toast("Protótipo: aqui abriria a página do Billy"); });
+drawMap(); renderMissions(); renderPrices(); renderNames(); renderCart();
+</script>
+</body>
+</html>
