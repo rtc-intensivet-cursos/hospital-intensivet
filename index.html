@@ -297,6 +297,8 @@ footer{padding:40px 0 60px;color:var(--muted);font-size:13px}
 .mod-row .right .p{font-weight:700;font-size:14px}
 .lessons{display:none;border-top:1px solid var(--line);background:rgba(0,0,0,.15)}
 .mod.open .lessons{display:block}
+.les .inc{font-size:12px;color:var(--muted);white-space:nowrap}
+.rrow .ctx b.mini{display:inline;font-size:inherit;color:var(--ink)}
 .les{display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center;padding:8px 14px 8px 16px;font-size:13.5px;border-bottom:1px solid rgba(20,80,99,.6)}
 .les:last-child{border-bottom:0}
 .les .play{width:22px;height:22px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;font-size:9px;color:var(--muted)}
@@ -434,17 +436,17 @@ footer{padding:40px 0 60px;color:var(--muted);font-size:13px}
     <div>
       <div class="eyebrow">Protótipo · primeira versão</div>
       <h1>Entre no hospital. <span>Escolha o setor e monte sua formação.</span></h1>
-      <p>Cada setor do hospital guarda os cursos, módulos e aulas daquele tema. Leve o curso inteiro, só o módulo que falta ou uma aula avulsa. O carrinho soma as horas-aula e o preço.</p>
+      <p>Cada setor do hospital guarda os cursos, módulos e aulas daquele tema. Leve o curso inteiro ou só o minicurso que você precisa. O carrinho soma as horas-aula e o preço.</p>
     </div>
     <div class="stats">
       <div class="stat"><b class="num" id="stH">0h</b><span>horas-aula (50 min)</span></div>
-      <div class="stat"><b class="num" id="stA">0</b><span>aulas avulsas</span></div>
+      <div class="stat"><b class="num" id="stA">0</b><span>minicursos</span></div>
       <div class="stat"><b class="num" id="stS">4.000+</b><span>alunos na plataforma</span></div>
     </div>
   </div>
   <div class="steps">
     <div class="step"><i>01</i><div><b>Entre por um setor</b><span>ou comece por um plantão pronto</span></div></div>
-    <div class="step"><i>02</i><div><b>Escolha o tamanho</b><span>curso, módulo ou aula avulsa</span></div></div>
+    <div class="step"><i>02</i><div><b>Escolha o tamanho</b><span>curso completo ou minicurso</span></div></div>
     <div class="step"><i>03</i><div><b>Feche seu plantão</b><span>horas-aula e preço somados</span></div></div>
   </div>
 
@@ -487,19 +489,19 @@ footer{padding:40px 0 60px;color:var(--muted);font-size:13px}
   <div class="wrap">
     <div class="eyebrow">Regra de preço · simulação</div>
     <h2>Como cobramos</h2>
-    <p class="lead">Tudo é calculado em hora-aula de 50 minutos. Quanto maior o pacote, menor o preço por hora-aula. Assim a aula avulsa resolve uma dúvida pontual e o curso completo continua sendo o melhor negócio.</p>
+    <p class="lead">Tudo é calculado em hora-aula de 50 minutos. Quanto maior o pacote, menor o preço por hora-aula. Assim o minicurso resolve um tema específico e o curso completo continua sendo o melhor negócio.</p>
     <div class="two">
       <div class="box">
         <h3>Regra usada neste protótipo</h3>
         <ul>
           <li><b>Base de tudo:</b> 1 hora-aula = 50 minutos de vídeo. Uma aula de 25 minutos vale 0,5 h/a.</li>
-          <li><b>Aula avulsa:</b> R$ 45 por hora-aula, mínimo de R$ 14,90.</li>
-          <li><b>Módulo avulso:</b> R$ 33 por hora-aula, mínimo de R$ 59,90.</li>
+          <li><b>Minicurso</b> (um módulo inteiro, com todas as aulas): R$ 33 por hora-aula, mínimo de R$ 59,90.</li>
+          <li><b>Simpósios:</b> inteiros ou por aula/palestra avulsa, a R$ 45 por hora-aula (mínimo de R$ 14,90).</li>
           <li><b>Curso completo:</b> o preço de hoje na página de vendas (entre R$ 16 e R$ 126 por hora-aula).</li>
-          <li><b>Desconto por volume</b> nos avulsos: 10% a partir de 12 h/a e 20% a partir de 30 h/a.</li>
+          <li><b>Desconto por volume</b> nos minicursos e avulsos: 10% a partir de 12 h/a e 20% a partir de 30 h/a.</li>
           <li>Quando o aluno já tem no carrinho boa parte de um curso, o site sugere trocar pelo curso completo.</li>
         </ul>
-        <p style="margin-top:12px">Os valores dos avulsos são ilustrativos, para discussão. Horas-aula calculadas sobre o tempo de vídeo no Vimeo.</p>
+        <p style="margin-top:12px">Os valores dos minicursos são ilustrativos, para discussão. A plataforma (Astron) libera acesso por curso inteiro, por isso a menor compra é o minicurso. Horas-aula calculadas sobre o tempo de vídeo no Vimeo.</p>
       </div>
       <div class="box">
         <h3>Preço por hora-aula dos cursos de hoje</h3>
@@ -622,9 +624,11 @@ COURSES.forEach(c => { c.s = c.mods.reduce((a,id)=>a+(MOD[id]?MOD[id].s:0),0); }
 const r90 = v => Math.max(1, Math.ceil(v)) - 0.10;
 /* Hora-aula = 50 min. Toda a precificação parte daqui. */
 const HA = 50*60;                 // segundos em 1 hora-aula
-const PRECO_AULA_HA = 45;         // aula avulsa: R$ por hora-aula
-const PRECO_MODULO_HA = 33;       // módulo avulso: R$ por hora-aula
-const DESC = [[30,.20],[12,.10]]; // desconto nos avulsos: [h/a mínimas, %]
+const PRECO_AULA_HA = 45;         // aula ou palestra avulsa (só nos simpósios): R$ por hora-aula
+const PRECO_MODULO_HA = 33;       // minicurso (= módulo na Astron): R$ por hora-aula
+const DESC = [[30,.20],[12,.10]]; // desconto nos minicursos e avulsos: [h/a mínimas, %]
+/* A Astron libera só curso inteiro: cada módulo vira um minicurso. Aula avulsa só nos simpósios. */
+const vendeAula = m => !!(m && m.kind);
 const ha = s => s/HA;
 const priceLesson = s => Math.max(14.90, r90(ha(s)*PRECO_AULA_HA));
 const priceModule = s => Math.max(59.90, r90(ha(s)*PRECO_MODULO_HA));
@@ -639,6 +643,7 @@ const BILLY = {id:"billy", n:"Billy · agente de estudos no WhatsApp", price:29.
 let cart = [];  // {k:'c'|'m'|'a'|'b', id}
 try { cart = JSON.parse(localStorage.getItem("hi_cart")||"[]"); } catch(e) {}
 cart = cart.filter(x => x.k==="b" ? x.id===BILLY.id : x.k==="c" ? COURSES.some(c=>c.id===x.id) : x.k==="m" ? MOD[x.id] : LES[x.id]);
+cart = cart.map(x => x.k==="a" && !vendeAula(MOD[LES[x.id].mod]) ? {k:"m", id:LES[x.id].mod} : x).filter((x,i,a) => a.findIndex(y => y.k===x.k && y.id===x.id) === i);
 const save = () => { try { localStorage.setItem("hi_cart", JSON.stringify(cart)); } catch(e) {} };
 const has = (k,id) => cart.some(x => x.k===k && x.id===id);
 const courseCovering = modId => cart.filter(x=>x.k==="c").map(x=>COURSES.find(c=>c.id===x.id)).find(c=>c && c.mods.includes(modId));
@@ -646,7 +651,7 @@ const courseCovering = modId => cart.filter(x=>x.k==="c").map(x=>COURSES.find(c=
 function itemInfo(x){
   if (x.k==="b") return {n:BILLY.n, s:0, p:BILLY.price, sub:"Assinatura · plano a definir (simulação)"};
   if (x.k==="c"){ const c = COURSES.find(c=>c.id===x.id); return {n:c.n, s:c.s, p:c.price, sub:"Curso completo · "+hrs(c.s)}; }
-  if (x.k==="m"){ const m = MOD[x.id]; return {n:m.n, s:m.s, p:priceModule(m.s), sub:(m.kind?"Simpósio inteiro · "+m.aulas.length+(m.kind==="blocos"?" gravações":" aulas"):"Módulo · "+m.aulas.length+" aulas")+" · "+hrs(m.s)}; }
+  if (x.k==="m"){ const m = MOD[x.id]; return {n:m.n, s:m.s, p:priceModule(m.s), sub:(m.kind?"Simpósio inteiro · "+m.aulas.length+(m.kind==="blocos"?" gravações":" aulas"):"Minicurso · "+m.aulas.length+" aulas")+" · "+hrs(m.s)}; }
   const l = LES[x.id]; return {n:l.n, s:l.s, p:priceLesson(l.s), sub:(MOD[l.mod].kind==="blocos"?"Palestras do "+MOD[l.mod].n+" · ":"Aula avulsa · ")+mins(l.s)+" · "+ha(l.s).toFixed(2).replace(".",",")+" h/a · "+MOD[l.mod].n};
 }
 function add(k,id){
@@ -743,12 +748,12 @@ function courseCard(c, here){
 }
 function modRow(m){
   const cov = courseCovering(m.id), inM = has("m",m.id), pm = priceModule(m.s);
-  const mBtn = cov ? `<button class="btn sm" disabled>No ${esc(cov.n)}</button>` : `<button class="btn sm ${inM?"in":""}" data-add="m:${m.id}" ${inM?"disabled":""}>${inM?"No carrinho":(m.kind?"+ Simpósio":"+ Módulo")}</button>`;
+  const mBtn = cov ? `<button class="btn sm" disabled>No ${esc(cov.n)}</button>` : `<button class="btn sm ${inM?"in":""}" data-add="m:${m.id}" ${inM?"disabled":""}>${inM?"No carrinho":(m.kind?"+ Simpósio":"+ Minicurso")}</button>`;
   const les = m.aulas.map(l => {
     const inA = has("a",l.id), blocked = cov || inM;
     const tk = l.talks && l.talks.length ? `<ul class="talks">${l.talks.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>` : "";
     return `<div class="les"><span class="play" aria-hidden="true">▶</span><span>${esc(l.n)}${tk}</span><span class="d num">${mins(l.s)} · ${ha(l.s).toFixed(2).replace(".",",")} h/a</span>
-      <span style="display:flex;gap:8px;align-items:center"><span class="p num">${brl(priceLesson(l.s))}</span>${blocked?`<button class="btn sm" disabled>Incluída</button>`:`<button class="btn sm ${inA?"in":"ghost"}" data-add="a:${l.id}" ${inA?"disabled":""}>${inA?"✓":(m.kind==="blocos"?"+ Adicionar":"+ Aula")}</button>`}</span></div>`;
+      ${!vendeAula(m) ? `<span class="inc">no minicurso</span>` : `<span style="display:flex;gap:8px;align-items:center"><span class="p num">${brl(priceLesson(l.s))}</span>${blocked?`<button class="btn sm" disabled>Incluída</button>`:`<button class="btn sm ${inA?"in":"ghost"}" data-add="a:${l.id}" ${inA?"disabled":""}>${inA?"✓":(m.kind==="blocos"?"+ Adicionar":"+ Aula")}</button>`}</span>`}</div>`;
   }).join("");
   return `<div class="mod" data-mod="${m.id}"><div class="mod-row">
     <button class="tg" type="button" data-toggle="${m.id}" aria-label="Ver aulas de ${esc(m.n)}">›</button>
@@ -767,7 +772,7 @@ function renderRoom(){
   spEl.hidden = !sp;
   spEl.innerHTML = sp ? `<i>Patrocínio</i><img src="${sp.logo}" alt="${esc(sp.nome)}">` : "";
   document.getElementById("rdDesc").textContent = r.d;
-  document.getElementById("rdStats").innerHTML = `<span><b class="num">${mods.length}</b> módulos</span><span><b class="num">${roomA(r.id)}</b> aulas</span><span><b class="num">${hrs(roomH(r.id))}</b></span>`;
+  document.getElementById("rdStats").innerHTML = `<span><b class="num">${mods.length}</b> minicursos</span><span><b class="num">${roomA(r.id)}</b> aulas</span><span><b class="num">${hrs(roomH(r.id))}</b></span>`;
   const here = COURSES.filter(c=>c.room===r.id);
   const ids = mods.map(m=>m.id);
   const elsewhere = COURSES.filter(c=>c.room!==r.id && c.mods.some(id=>ids.includes(id)));
@@ -776,7 +781,7 @@ function renderRoom(){
   if (elsewhere.length) h += `<h4>Também estão em</h4>` + elsewhere.map(c=>courseCard(c,false)).join("");
   h += r.id==="auditorio"
     ? `<h4>Simpósio inteiro, por tema ou por aula</h4><p class="note">O VI e o VII foram gravados ao vivo em gravações longas, com várias palestras em cada uma. Por isso são vendidos inteiros ou por tema. O VIII tem uma gravação por palestra e pode ser comprado aula a aula. A Vet Summit Collection, com os três, sai mais barata.</p>` + mods.map(modRow).join("")
-    : `<h4>Monte por módulo ou por aula</h4>` + mods.map(modRow).join("");
+    : `<h4>Monte por minicurso</h4><p class="note" style="margin:-4px 0 10px">Cada módulo é vendido como um minicurso, com todas as suas aulas.</p>` + mods.map(modRow).join("");
   renderRoomCart();
   const body = document.getElementById("rdBody"); body.innerHTML = h;
   open.forEach(id => { const e = body.querySelector(`.mod[data-mod="${id}"]`); if (e) e.classList.add("open"); });
@@ -807,14 +812,14 @@ function renderCart(){
   if (!cart.length){ body.innerHTML = `<div class="empty">Seu plantão está vazio.<br>Clique em um setor do mapa para começar.</div><button class="btn ghost" style="width:100%;margin-top:12px;padding:12px" id="keepShopping" type="button">${backLabel()}</button>`; return; }
   const order = {b:3,c:0,m:1,a:2};
   const items = [...cart].sort((a,b)=>order[a.k]-order[b.k]).map(x => { const i = itemInfo(x);
-    return `<div class="ci"><span class="k ${x.k}">${x.k==="b"?"Billy":x.k==="c"?"Curso":x.k==="m"?(MOD[x.id].kind?"Simpósio":"Módulo"):(MOD[LES[x.id].mod].kind==="blocos"?"Palestras":"Aula")}</span><div><b>${esc(i.n)}</b><span>${esc(i.sub)}</span></div><span class="num" style="font-weight:700">${brl(i.p)}</span><button class="rm" type="button" data-rm="${x.k}:${x.id}" aria-label="Remover ${esc(i.n)}">×</button></div>`; }).join("");
+    return `<div class="ci"><span class="k ${x.k}">${x.k==="b"?"Billy":x.k==="c"?"Curso":x.k==="m"?(MOD[x.id].kind?"Simpósio":"Minicurso"):(MOD[LES[x.id].mod].kind==="blocos"?"Palestras":"Aula")}</span><div><b>${esc(i.n)}</b><span>${esc(i.sub)}</span></div><span class="num" style="font-weight:700">${brl(i.p)}</span><button class="rm" type="button" data-rm="${x.k}:${x.id}" aria-label="Remover ${esc(i.n)}">×</button></div>`; }).join("");
   const sug = suggestions().map(({c,v}) => `<div class="hint"><span>Você já tem ${brl(v)} em peças do <b>${esc(c.n)}</b>. O curso completo sai ${brl(c.price)} com ${hrs(c.s)}.</span><button class="btn sm" data-add="c:${c.id}">Trocar</button></div>`).join("");
-  const next = ha(t.looseS) < 12 ? `Faltam ${hrs(12*HA-t.looseS)} em avulsos para 10% de desconto.` : ha(t.looseS) < 30 ? `Faltam ${hrs(30*HA-t.looseS)} em avulsos para 20% de desconto.` : "Desconto máximo nos avulsos aplicado.";
+  const next = ha(t.looseS) < 12 ? `Faltam ${hrs(12*HA-t.looseS)} em minicursos para 10% de desconto.` : ha(t.looseS) < 30 ? `Faltam ${hrs(30*HA-t.looseS)} em minicursos para 20% de desconto.` : "Desconto máximo nos minicursos aplicado.";
   body.innerHTML = `<div class="cart-items">${items}</div>${sug}
     <div class="sum num">
       <div><span>Horas-aula (50 min)</span><b>${hrs(t.s)}</b></div>
       ${t.full?`<div><span>Cursos completos${has("b",BILLY.id)?" e Billy":""}</span><span>${brl(t.full)}</span></div>`:""}
-      ${t.loose?`<div><span>Módulos e aulas avulsas</span><span>${brl(t.loose)}</span></div>`:""}
+      ${t.loose?`<div><span>Minicursos e avulsos</span><span>${brl(t.loose)}</span></div>`:""}
       ${t.disc?`<div style="color:var(--accent)"><span>Desconto por volume (${t.rate*100}%)</span><span>− ${brl(t.disc)}</span></div>`:""}
       <div class="tot"><span>Total</span><span>${brl(t.total)}</span></div>
       <div style="color:var(--muted);font-size:13px"><span>${t.loose?next:"Preço por hora-aula: "+brl(t.total/(ha(t.s)||1))}</span></div>
@@ -910,7 +915,8 @@ function hlText(text, groups){
 let lastQ = "", showAll = false, lastLessons = [];
 function lessonState(l){
   const cov = courseCovering(l.mod), inM = has("m", l.mod), inA = has("a", l.id);
-  return cov ? {lbl:"No "+cov.n, dis:true, cls:""} : inM ? {lbl:"No módulo", dis:true, cls:""} : inA ? {lbl:"✓ No carrinho", dis:true, cls:"in"} : {lbl:"+ Carrinho", dis:false, cls:""};
+  if (!vendeAula(MOD[l.mod])) return cov ? {lbl:"No "+cov.n, dis:true, cls:"", add:"m:"+l.mod} : inM ? {lbl:"✓ Minicurso no carrinho", dis:true, cls:"in", add:"m:"+l.mod} : {lbl:"+ Minicurso", dis:false, cls:"", add:"m:"+l.mod};
+  return cov ? {lbl:"No "+cov.n, dis:true, cls:""} : inM ? {lbl:"No módulo", dis:true, cls:""} : inA ? {lbl:"✓ No carrinho", dis:true, cls:"in"} : {lbl:"+ Carrinho", dis:false, cls:"", add:"a:"+l.id};
 }
 function renderSearch(){
   const box = document.getElementById("results"), q = document.getElementById("q").value.trim();
@@ -923,25 +929,31 @@ function renderSearch(){
   const lessons = scored.filter(x => x.d.k==="a"), others = scored.filter(x => x.d.k!=="a").slice(0, 5);
   lastLessons = lessons.map(x => LES[x.d.id]);
   if (!scored.length) { box.innerHTML = `<p class="r-none">Nada encontrado para “${esc(q)}”. Tente outra palavra, como o nome de uma doença, droga ou procedimento.</p>`; return; }
-  const free = lastLessons.filter(l => !lessonState(l).dis);
-  const freeP = free.reduce((a,l)=>a+priceLesson(l.s),0), freeS = free.reduce((a,l)=>a+l.s,0);
+  /* o que entra no "Adicionar todas": o minicurso de cada aula (sem repetir) e as palestras dos simpósios */
+  const freeAdds = [...new Set(lastLessons.filter(l => !lessonState(l).dis).map(l => lessonState(l).add))];
+  const free = freeAdds;
+  const freeP = freeAdds.reduce((a,k) => { const [t,id] = k.split(":"); return a + (t==="m" ? priceModule(MOD[+id].s) : priceLesson(LES[+id].s)); }, 0);
+  const freeS = freeAdds.reduce((a,k) => { const [t,id] = k.split(":"); return a + (t==="m" ? MOD[+id].s : LES[+id].s); }, 0);
   const shown = showAll ? lessons : lessons.slice(0, 8);
   const row = x => { const d = x.d;
     if (d.k === "a") { const l = LES[d.id], st = lessonState(l), bl = d.mod.kind==="blocos";
+      if (!vendeAula(d.mod)) { const m = d.mod;
+        return `<div class="rrow" style="--c:${d.room.c}"><span class="k">Aula</span><div><b>${hlText(d.title, groups)}</b><span class="ctx">Está no minicurso <b class="mini">${esc(m.n)}</b> · ${m.aulas.length} aulas · ${hrs(m.s)} · <i>${esc(d.room.n)}</i></span></div>
+          <span class="p num">${brl(priceModule(m.s))}<small>minicurso inteiro</small></span><button class="btn sm ${st.cls}" data-add="${st.add}" ${st.dis?"disabled":""}>${st.lbl}</button></div>`; }
       return `<div class="rrow" style="--c:${d.room.c}"><span class="k">${bl?"Palestras":"Aula"}</span><div><b>${hlText(d.title, groups)}</b><span class="ctx"><i>${esc(d.room.n)}</i> · ${esc(d.mod.n)}${l.talks?" · "+hlText(l.talks.join("; "), groups):""}</span></div>
-        <span class="p num">${brl(priceLesson(l.s))}<small>${mins(l.s)} · ${ha(l.s).toFixed(2).replace(".",",")} h/a</small></span><button class="btn sm ${st.cls}" data-add="a:${l.id}" ${st.dis?"disabled":""}>${st.lbl}</button></div>`; }
+        <span class="p num">${brl(priceLesson(l.s))}<small>${mins(l.s)} · ${ha(l.s).toFixed(2).replace(".",",")} h/a</small></span><button class="btn sm ${st.cls}" data-add="${st.add}" ${st.dis?"disabled":""}>${st.lbl}</button></div>`; }
     if (d.k === "m") { const m = MOD[d.id], cov = courseCovering(m.id), inM = has("m", m.id);
-      return `<div class="rrow" style="--c:${d.room.c}"><span class="k m">${m.kind?"Simpósio":"Módulo"}</span><div><b>${hlText(d.title, groups)}</b><span class="ctx"><i>${esc(d.room.n)}</i> · ${m.aulas.length} ${m.kind==="blocos"?"gravações":"aulas"}</span></div>
+      return `<div class="rrow" style="--c:${d.room.c}"><span class="k m">${m.kind?"Simpósio":"Minicurso"}</span><div><b>${hlText(d.title, groups)}</b><span class="ctx"><i>${esc(d.room.n)}</i> · ${m.aulas.length} ${m.kind==="blocos"?"gravações":"aulas"}</span></div>
         <span class="p num">${brl(priceModule(m.s))}<small>${hrs(m.s)}</small></span><button class="btn sm ${inM?"in":""}" data-add="m:${m.id}" ${cov||inM?"disabled":""}>${cov?"No curso":inM?"✓ No carrinho":"+ Carrinho"}</button></div>`; }
     const c = COURSES.find(c => c.id === d.id), inC = has("c", c.id);
     return `<div class="rrow" style="--c:${d.room.c}"><span class="k c">Curso</span><div><b>${hlText(d.title, groups)}</b><span class="ctx"><i>${esc(d.room.n)}</i> · curso completo${c.s?" · "+c.mods.length+" módulos":""}</span></div>
       <span class="p num">${c.price?brl(c.price):"—"}<small>${c.s?hrs(c.s):""}</small></span>${c.price?`<button class="btn sm ${inC?"in":""}" data-add="c:${c.id}" ${inC?"disabled":""}>${inC?"✓ No carrinho":"+ Carrinho"}</button>`:`<a class="btn sm ghost" href="${c.url}" target="_blank" rel="noopener">Ver ↗</a>`}</div>`;
   };
-  box.innerHTML = `<div class="r-head"><span><b>${lessons.length}</b> aula${lessons.length===1?"":"s"} sobre “${esc(q)}”${others.length?" e "+others.length+" módulo"+(others.length>1?"s":"")+" ou curso"+(others.length>1?"s":""):""}</span>
-      ${free.length>1?`<button class="btn sm" type="button" id="addAll">Adicionar as ${free.length} aulas · ${brl(freeP)} · ${hrs(freeS)}</button>`:""}</div>
+  box.innerHTML = `<div class="r-head"><span><b>${lessons.length}</b> aula${lessons.length===1?"":"s"} sobre “${esc(q)}”${others.length?" e "+others.length+" minicurso"+(others.length>1?"s":"")+" ou curso"+(others.length>1?"s":""):""}</span>
+      ${free.length>1?`<button class="btn sm" type="button" id="addAll">Adicionar os ${free.length} minicursos com essas aulas · ${brl(freeP)} · ${hrs(freeS)}</button>`:""}</div>
     ${lessons.length?`<div class="r-sub">Aulas</div>`+shown.map(row).join(""):""}
     ${lessons.length>8&&!showAll?`<button class="linkish r-more" type="button" id="moreRes">Mostrar todas as ${lessons.length} aulas</button>`:""}
-    ${others.length?`<div class="r-sub">Módulos e cursos relacionados</div>`+others.map(row).join(""):""}`;
+    ${others.length?`<div class="r-sub">Minicursos e cursos relacionados</div>`+others.map(row).join(""):""}`;
 }
 let st;
 document.getElementById("q").addEventListener("input", () => { clearTimeout(st); st = setTimeout(renderSearch, 120); });
@@ -949,8 +961,8 @@ document.getElementById("qClear").addEventListener("click", () => { const i = do
 document.querySelectorAll(".schips [data-q]").forEach(b => b.addEventListener("click", () => { document.getElementById("q").value = b.dataset.q; renderSearch(); }));
 document.getElementById("results").addEventListener("click", e => {
   if (e.target.id === "moreRes") { showAll = true; renderSearch(); }
-  if (e.target.id === "addAll") { const free = lastLessons.filter(l => !lessonState(l).dis);
-    free.forEach(l => { if (!has("a", l.id)) cart.push({k:"a", id:l.id}); }); save(); refresh(); toast(free.length+" aulas adicionadas ao carrinho"); }
+  if (e.target.id === "addAll") { const adds = [...new Set(lastLessons.filter(l => !lessonState(l).dis).map(l => lessonState(l).add))];
+    adds.forEach(k => { const [t,id] = k.split(":"); add(t, +id); }); toast(adds.length+" itens adicionados ao carrinho"); }
 });
 
 function refresh(){ renderSearch(); renderCart(); if (currentRoom && document.getElementById("roomDrawer").classList.contains("on")) renderRoom(); renderMissions(); }
@@ -999,7 +1011,7 @@ document.getElementById("pause").addEventListener("click", e => { const p = docu
 
 const allS = Object.values(MOD).reduce((a,m)=>a+m.s,0), allA = Object.values(LES).length;
 document.getElementById("stH").textContent = Math.round(ha(allS));
-document.getElementById("stA").textContent = allA;
+document.getElementById("stA").textContent = Object.values(MOD).filter(m => !m.kind).length;
 
 /* ---------- sons das salas (gerados no navegador, sem arquivos) ---------- */
 const SND = (() => {
