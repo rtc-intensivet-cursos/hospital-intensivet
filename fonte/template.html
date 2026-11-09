@@ -628,6 +628,9 @@ const PRECO_MODULO_HA = 33;       // minicurso (= módulo na Astron): R$ por hor
 const DESC = [[30,.20],[12,.10]]; // desconto nos minicursos e avulsos: [h/a mínimas, %]
 /* A Astron libera só curso inteiro: cada módulo vira um minicurso. Aula avulsa só nos simpósios. */
 const vendeAula = m => !!(m && m.kind);
+/* módulos vendidos só dentro do curso inteiro (não viram minicurso): Habilidades na Emergência */
+const SO_NO_CURSO = {}; COURSES.filter(c => c.id === "habilidades").forEach(c => c.mods.forEach(id => SO_NO_CURSO[id] = c.id));
+const ehMini = m => m && !m.kind && !SO_NO_CURSO[m.id];
 const ha = s => s/HA;
 const priceLesson = s => Math.max(14.90, r90(ha(s)*PRECO_AULA_HA));
 const priceModule = s => Math.max(59.90, r90(ha(s)*PRECO_MODULO_HA));
@@ -642,7 +645,7 @@ const BILLY = {id:"billy", n:"Billy · agente de estudos no WhatsApp", price:29.
 let cart = [];  // {k:'c'|'m'|'a'|'b', id}
 try { cart = JSON.parse(localStorage.getItem("hi_cart")||"[]"); } catch(e) {}
 cart = cart.filter(x => x.k==="b" ? x.id===BILLY.id : x.k==="c" ? COURSES.some(c=>c.id===x.id) : x.k==="m" ? MOD[x.id] : LES[x.id]);
-cart = cart.map(x => x.k==="a" && !vendeAula(MOD[LES[x.id].mod]) ? {k:"m", id:LES[x.id].mod} : x).filter((x,i,a) => a.findIndex(y => y.k===x.k && y.id===x.id) === i);
+cart = cart.map(x => x.k==="a" && !vendeAula(MOD[LES[x.id].mod]) ? {k:"m", id:LES[x.id].mod} : x).map(x => x.k==="m" && SO_NO_CURSO[x.id] ? {k:"c", id:SO_NO_CURSO[x.id]} : x).filter((x,i,a) => a.findIndex(y => y.k===x.k && y.id===x.id) === i);
 const save = () => { try { localStorage.setItem("hi_cart", JSON.stringify(cart)); } catch(e) {} };
 const has = (k,id) => cart.some(x => x.k===k && x.id===id);
 const courseCovering = modId => cart.filter(x=>x.k==="c").map(x=>COURSES.find(c=>c.id===x.id)).find(c=>c && c.mods.includes(modId));
@@ -780,7 +783,8 @@ function renderRoom(){
   if (elsewhere.length) h += `<h4>Também estão em</h4>` + elsewhere.map(c=>courseCard(c,false)).join("");
   h += r.id==="auditorio"
     ? `<h4>Simpósio inteiro, por tema ou por aula</h4><p class="note">O VI e o VII foram gravados ao vivo em gravações longas, com várias palestras em cada uma. Por isso são vendidos inteiros ou por tema. O VIII tem uma gravação por palestra e pode ser comprado aula a aula. A Vet Summit Collection, com os três, sai mais barata.</p>` + mods.map(modRow).join("")
-    : `<h4>Monte por minicurso</h4><p class="note" style="margin:-4px 0 10px">Cada módulo é vendido como um minicurso, com todas as suas aulas.</p>` + mods.map(modRow).join("");
+    : (mods.some(ehMini) ? `<h4>Monte por minicurso</h4><p class="note" style="margin:-4px 0 10px">Cada módulo é vendido como um minicurso, com todas as suas aulas.</p>` + mods.filter(ehMini).map(modRow).join("") : "")
+      + (mods.some(m => SO_NO_CURSO[m.id]) ? `<p class="note" style="margin-top:12px">As técnicas do APH (XABC, vias aéreas, hemorragias, acessos) fazem parte do curso <b>Habilidades na Emergência</b> e são vendidas só com o curso inteiro.</p>` : "");
   renderRoomCart();
   const body = document.getElementById("rdBody"); body.innerHTML = h;
   open.forEach(id => { const e = body.querySelector(`.mod[data-mod="${id}"]`); if (e) e.classList.add("open"); });
@@ -914,6 +918,7 @@ function hlText(text, groups){
 let lastQ = "", showAll = false, lastLessons = [];
 function lessonState(l){
   const cov = courseCovering(l.mod), inM = has("m", l.mod), inA = has("a", l.id);
+  if (SO_NO_CURSO[l.mod]) { const cid = SO_NO_CURSO[l.mod]; return has("c", cid) ? {lbl:"✓ Curso no carrinho", dis:true, cls:"in", add:"c:"+cid} : {lbl:"+ Curso", dis:false, cls:"", add:"c:"+cid}; }
   if (!vendeAula(MOD[l.mod])) return cov ? {lbl:"No "+cov.n, dis:true, cls:"", add:"m:"+l.mod} : inM ? {lbl:"✓ Minicurso no carrinho", dis:true, cls:"in", add:"m:"+l.mod} : {lbl:"+ Minicurso", dis:false, cls:"", add:"m:"+l.mod};
   return cov ? {lbl:"No "+cov.n, dis:true, cls:""} : inM ? {lbl:"No módulo", dis:true, cls:""} : inA ? {lbl:"✓ No carrinho", dis:true, cls:"in"} : {lbl:"+ Carrinho", dis:false, cls:"", add:"a:"+l.id};
 }
@@ -925,17 +930,20 @@ function renderSearch(){
   if (q !== lastQ) { showAll = false; lastQ = q; }
   const groups = queryTerms(q);
   const scored = SEARCH_DOCS.map(d => ({d, s:scoreDoc(d, groups)})).filter(x => x.s >= 1.2).sort((a,b) => b.s - a.s);
-  const lessons = scored.filter(x => x.d.k==="a"), others = scored.filter(x => x.d.k!=="a").slice(0, 5);
+  const lessons = scored.filter(x => x.d.k==="a"), others = scored.filter(x => x.d.k!=="a" && !(x.d.k==="m" && SO_NO_CURSO[x.d.id])).slice(0, 5);
   lastLessons = lessons.map(x => LES[x.d.id]);
   if (!scored.length) { box.innerHTML = `<p class="r-none">Nada encontrado para “${esc(q)}”. Tente outra palavra, como o nome de uma doença, droga ou procedimento.</p>`; return; }
   /* o que entra no "Adicionar todas": o minicurso de cada aula (sem repetir) e as palestras dos simpósios */
   const freeAdds = [...new Set(lastLessons.filter(l => !lessonState(l).dis).map(l => lessonState(l).add))];
   const free = freeAdds;
-  const freeP = freeAdds.reduce((a,k) => { const [t,id] = k.split(":"); return a + (t==="m" ? priceModule(MOD[+id].s) : priceLesson(LES[+id].s)); }, 0);
-  const freeS = freeAdds.reduce((a,k) => { const [t,id] = k.split(":"); return a + (t==="m" ? MOD[+id].s : LES[+id].s); }, 0);
+  const freeP = freeAdds.reduce((a,k) => { const [t,id] = k.split(":"); return a + (t==="c" ? COURSES.find(c=>c.id===id).price : t==="m" ? priceModule(MOD[+id].s) : priceLesson(LES[+id].s)); }, 0);
+  const freeS = freeAdds.reduce((a,k) => { const [t,id] = k.split(":"); return a + (t==="c" ? COURSES.find(c=>c.id===id).s : t==="m" ? MOD[+id].s : LES[+id].s); }, 0);
   const shown = showAll ? lessons : lessons.slice(0, 8);
   const row = x => { const d = x.d;
     if (d.k === "a") { const l = LES[d.id], st = lessonState(l), bl = d.mod.kind==="blocos";
+      if (SO_NO_CURSO[d.mod.id]) { const c = COURSES.find(c => c.id === SO_NO_CURSO[d.mod.id]);
+        return `<div class="rrow" style="--c:${d.room.c}"><span class="k">Aula</span><div><b>${hlText(d.title, groups)}</b><span class="ctx">Está no curso <b class="mini">${esc(c.n)}</b> · ${c.mods.length} módulos · ${hrs(c.s)} · <i>${esc(d.room.n)}</i></span></div>
+          <span class="p num">${brl(c.price)}<small>curso completo</small></span><button class="btn sm ${st.cls}" data-add="${st.add}" ${st.dis?"disabled":""}>${st.lbl}</button></div>`; }
       if (!vendeAula(d.mod)) { const m = d.mod;
         return `<div class="rrow" style="--c:${d.room.c}"><span class="k">Aula</span><div><b>${hlText(d.title, groups)}</b><span class="ctx">Está no minicurso <b class="mini">${esc(m.n)}</b> · ${m.aulas.length} aulas · ${hrs(m.s)} · <i>${esc(d.room.n)}</i></span></div>
           <span class="p num">${brl(priceModule(m.s))}<small>minicurso inteiro</small></span><button class="btn sm ${st.cls}" data-add="${st.add}" ${st.dis?"disabled":""}>${st.lbl}</button></div>`; }
@@ -949,7 +957,7 @@ function renderSearch(){
       <span class="p num">${c.price?brl(c.price):"—"}<small>${c.s?hrs(c.s):""}</small></span>${c.price?`<button class="btn sm ${inC?"in":""}" data-add="c:${c.id}" ${inC?"disabled":""}>${inC?"✓ No carrinho":"+ Carrinho"}</button>`:`<a class="btn sm ghost" href="${c.url}" target="_blank" rel="noopener">Ver ↗</a>`}</div>`;
   };
   box.innerHTML = `<div class="r-head"><span><b>${lessons.length}</b> aula${lessons.length===1?"":"s"} sobre “${esc(q)}”${others.length?" e "+others.length+" minicurso"+(others.length>1?"s":"")+" ou curso"+(others.length>1?"s":""):""}</span>
-      ${free.length>1?`<button class="btn sm" type="button" id="addAll">Adicionar os ${free.length} minicursos com essas aulas · ${brl(freeP)} · ${hrs(freeS)}</button>`:""}</div>
+      ${free.length>1?`<button class="btn sm" type="button" id="addAll">Adicionar os ${free.length} itens com essas aulas · ${brl(freeP)} · ${hrs(freeS)}</button>`:""}</div>
     ${lessons.length?`<div class="r-sub">Aulas</div>`+shown.map(row).join(""):""}
     ${lessons.length>8&&!showAll?`<button class="linkish r-more" type="button" id="moreRes">Mostrar todas as ${lessons.length} aulas</button>`:""}
     ${others.length?`<div class="r-sub">Minicursos e cursos relacionados</div>`+others.map(row).join(""):""}`;
@@ -961,7 +969,7 @@ document.querySelectorAll(".schips [data-q]").forEach(b => b.addEventListener("c
 document.getElementById("results").addEventListener("click", e => {
   if (e.target.id === "moreRes") { showAll = true; renderSearch(); }
   if (e.target.id === "addAll") { const adds = [...new Set(lastLessons.filter(l => !lessonState(l).dis).map(l => lessonState(l).add))];
-    adds.forEach(k => { const [t,id] = k.split(":"); add(t, +id); }); toast(adds.length+" itens adicionados ao carrinho"); }
+    adds.forEach(k => { const [t,id] = k.split(":"); add(t, t==="c" ? id : +id); }); toast(adds.length+" itens adicionados ao carrinho"); }
 });
 
 function refresh(){ renderSearch(); renderCart(); if (currentRoom && document.getElementById("roomDrawer").classList.contains("on")) renderRoom(); renderMissions(); }
@@ -1010,7 +1018,7 @@ document.getElementById("pause").addEventListener("click", e => { const p = docu
 
 const allS = Object.values(MOD).reduce((a,m)=>a+m.s,0), allA = Object.values(LES).length;
 document.getElementById("stH").textContent = Math.round(ha(allS));
-document.getElementById("stA").textContent = Object.values(MOD).filter(m => !m.kind).length;
+document.getElementById("stA").textContent = Object.values(MOD).filter(ehMini).length;
 
 /* ---------- sons das salas (gerados no navegador, sem arquivos) ---------- */
 const SND = (() => {
